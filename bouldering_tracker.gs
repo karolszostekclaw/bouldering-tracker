@@ -79,8 +79,8 @@ function setupSpreadsheet() {
   ensureSheetWithHeaders_(ss, 'Route Profile', ['Route ID']);
 
   seedDefaultSettings_();
-  ensureUiLanguageSetting_(ss.getSheetByName('Settings'));
-  ensureTrainingMetricConfig_(ss.getSheetByName('Settings'));
+  ensureUiLanguageSetting_(sheetByKey_(ss, 'Settings'));
+  ensureTrainingMetricConfig_(sheetByKey_(ss, 'Settings'));
   ensureGradeConversionSheet_(ss);
   prepareEventEntryTab();
   installTriggers();
@@ -92,9 +92,9 @@ function setupSpreadsheet() {
 
 function applyUiLanguage() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  ensureUiLanguageSetting_(ss.getSheetByName('Settings'));
+  ensureUiLanguageSetting_(sheetByKey_(ss, 'Settings'));
   const lang = getUiLanguage_();
-  const settings = ss.getSheetByName('Settings');
+  const settings = sheetByKey_(ss, 'Settings');
   if (settings) {
     settings.getRange('J1').setValue('UI Language');
     settings.getRange('J2').setValue(lang);
@@ -110,8 +110,8 @@ function applyUiLanguage() {
 function runPostUpdateRoutine() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   ensureRequiredSheets_(ss);
-  ensureUiLanguageSetting_(ss.getSheetByName('Settings'));
-  ensureTrainingMetricConfig_(ss.getSheetByName('Settings'));
+  ensureUiLanguageSetting_(sheetByKey_(ss, 'Settings'));
+  ensureTrainingMetricConfig_(sheetByKey_(ss, 'Settings'));
   ensureGradeConversionSheet_(ss);
   installTriggers();
   syncTracker();
@@ -149,11 +149,11 @@ function syncTracker() {
   try {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     ensureRequiredSheets_(ss);
-    const sheet = ss.getSheetByName('Data');
-    const custSheet = ss.getSheetByName('Customers');
-    const routeSheet = ss.getSheetByName('Routes');
-    const settingsSheet = ss.getSheetByName('Settings');
-    const logSheet = ss.getSheetByName('Logbook');
+    const sheet = sheetByKey_(ss, 'Data');
+    const custSheet = sheetByKey_(ss, 'Customers');
+    const routeSheet = sheetByKey_(ss, 'Routes');
+    const settingsSheet = sheetByKey_(ss, 'Settings');
+    const logSheet = sheetByKey_(ss, 'Logbook');
 
     if (!sheet || !custSheet || !routeSheet || !settingsSheet || !logSheet) return;
 
@@ -319,7 +319,7 @@ function handleEdit(e) {
   }
 
   if (sheetName === 'Rankings View') {
-    if (e.range.getA1Notation() === 'J1') refreshRankingsView_();
+    if (e.range.getA1Notation() === 'B1') refreshRankingsView_();
     return;
   }
 
@@ -348,7 +348,7 @@ function handleEdit(e) {
     e.range.setValue(false);
     if (!customerId) return;
 
-    const profileSheet = ss.getSheetByName('Customer Profile');
+    const profileSheet = sheetByKey_(ss, 'Customer Profile');
     if (!profileSheet) {
       ss.toast('Sheet "Customer Profile" not found.', 'Navigation Error');
       return;
@@ -368,7 +368,7 @@ function handleEdit(e) {
     e.range.setValue(false);
     if (!routeId) return;
 
-    const routeProfileSheet = ss.getSheetByName('Route Profile');
+    const routeProfileSheet = sheetByKey_(ss, 'Route Profile');
     if (!routeProfileSheet) {
       ss.toast('Sheet "Route Profile" not found.', 'Navigation Error');
       return;
@@ -388,10 +388,10 @@ function handleEdit(e) {
  */
 function logFromDataSheet() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = ss.getSheetByName('Data');
-  const logSheet = ss.getSheetByName('Logbook');
-  const routeSheet = ss.getSheetByName('Routes');
-  const custSheet = ss.getSheetByName('Customers');
+  const sheet = sheetByKey_(ss, 'Data');
+  const logSheet = sheetByKey_(ss, 'Logbook');
+  const routeSheet = sheetByKey_(ss, 'Routes');
+  const custSheet = sheetByKey_(ss, 'Customers');
 
   if (!sheet || !logSheet || !routeSheet || !custSheet) return;
 
@@ -445,10 +445,10 @@ function logFromDataSheet() {
  */
 function logClimbFromProfile() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const profileSheet = ss.getSheetByName('Customer Profile');
-  const logSheet = ss.getSheetByName('Logbook');
-  const routeSheet = ss.getSheetByName('Routes');
-  const custSheet = ss.getSheetByName('Customers');
+  const profileSheet = sheetByKey_(ss, 'Customer Profile');
+  const logSheet = sheetByKey_(ss, 'Logbook');
+  const routeSheet = sheetByKey_(ss, 'Routes');
+  const custSheet = sheetByKey_(ss, 'Customers');
 
   if (!profileSheet || !logSheet || !routeSheet || !custSheet) return;
 
@@ -509,8 +509,8 @@ function logClimbFromProfile() {
  */
 function logTrainingFromCustomerProfile() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const profileSheet = ss.getSheetByName('Customer Profile');
-  const custSheet = ss.getSheetByName('Customers');
+  const profileSheet = sheetByKey_(ss, 'Customer Profile');
+  const custSheet = sheetByKey_(ss, 'Customers');
 
   if (!profileSheet || !custSheet) return;
 
@@ -559,11 +559,11 @@ function logTrainingFromCustomerProfile() {
  */
 function updateLogDropdowns() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const dataSheet = ss.getSheetByName('Data');
-  const profileSheet = ss.getSheetByName('Customer Profile');
-  const custSheet = ss.getSheetByName('Customers');
-  const routeSheet = ss.getSheetByName('Routes');
-  const settingsSheet = ss.getSheetByName('Settings');
+  const dataSheet = sheetByKey_(ss, 'Data');
+  const profileSheet = sheetByKey_(ss, 'Customer Profile');
+  const custSheet = sheetByKey_(ss, 'Customers');
+  const routeSheet = sheetByKey_(ss, 'Routes');
+  const settingsSheet = sheetByKey_(ss, 'Settings');
 
   if (!dataSheet || !custSheet || !routeSheet || !settingsSheet) return;
 
@@ -619,7 +619,7 @@ function updateLogDropdowns() {
     );
   }
 
-  const routeProfileSheet = ss.getSheetByName('Route Profile');
+  const routeProfileSheet = sheetByKey_(ss, 'Route Profile');
   if (routeProfileSheet) {
     const routeIdList = routeData.map(row => row[0]).filter(String);
     routeProfileSheet.getRange('A1').setDataValidation(
@@ -631,7 +631,7 @@ function updateLogDropdowns() {
 }
 
 function ensureTrainingLogSheet_(ss) {
-  let sheet = ss.getSheetByName('TrainingLog');
+  let sheet = sheetByKey_(ss, 'TrainingLog');
 
   if (!sheet) {
     sheet = ss.insertSheet('TrainingLog');
@@ -775,7 +775,7 @@ function ensureSheetWithHeaders_(ss, name, headers) {
 
 function seedDefaultSettings_() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const settings = ss.getSheetByName('Settings');
+  const settings = sheetByKey_(ss, 'Settings');
   if (!settings) return;
 
   const hasRows = settings.getLastRow() > 1;
@@ -791,7 +791,7 @@ function seedDefaultSettings_() {
 
 function appendStructuredEvent_(eventType, entityType, entityId, payload, actor) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = ss.getSheetByName('EventLog');
+  const sheet = sheetByKey_(ss, 'EventLog');
   if (!sheet) return;
 
   const payloadText = JSON.stringify(payload || {});
@@ -808,15 +808,15 @@ function appendStructuredEvent_(eventType, entityType, entityId, payload, actor)
 
 function rebuildTablesFromEventLog() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const eventSheet = ss.getSheetByName('EventLog');
+  const eventSheet = sheetByKey_(ss, 'EventLog');
   if (!eventSheet || eventSheet.getLastRow() < 2) {
     SpreadsheetApp.getUi().alert('EventLog is empty. Nothing to rebuild.');
     return;
   }
 
-  const custSheet = ss.getSheetByName('Customers');
-  const routeSheet = ss.getSheetByName('Routes');
-  const logSheet = ss.getSheetByName('Logbook');
+  const custSheet = sheetByKey_(ss, 'Customers');
+  const routeSheet = sheetByKey_(ss, 'Routes');
+  const logSheet = sheetByKey_(ss, 'Logbook');
   const trainingSheet = ensureTrainingLogSheet_(ss);
   if (!custSheet || !routeSheet || !logSheet || !trainingSheet) return;
 
@@ -927,7 +927,7 @@ function safeParseJson_(value) {
 
 function prepareEventEntryTab() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = ss.getSheetByName('Event Entry') || ss.insertSheet('Event Entry');
+  const sheet = sheetByKey_(ss, 'Event Entry') || ss.insertSheet('Event Entry');
   const ja = getUiLanguage_() === 'JA';
   sheet.clear();
   sheet.setFrozenRows(20);
@@ -973,7 +973,7 @@ function prepareEventEntryTab() {
   sheet.getRange('G11').setValue(ja ? '登攀イベントを適用' : 'Apply Climb Event');
   sheet.getRange('H11').insertCheckboxes();
 
-  const settings = ss.getSheetByName('Settings');
+  const settings = sheetByKey_(ss, 'Settings');
   if (settings && settings.getLastRow() > 1) {
     const statusList = settings.getRange(2, 1, settings.getLastRow() - 1, 1).getValues().flat().filter(String);
     if (statusList.length) {
@@ -993,7 +993,7 @@ function prepareEventEntryTab() {
   ]);
   sheet.getRange('J9').setValue(ja ? 'トレーニングイベントを適用' : 'Apply Training Event');
   sheet.getRange('K9').insertCheckboxes();
-  const metricCfg = getTrainingMetricConfig_(ss.getSheetByName('Settings'));
+  const metricCfg = getTrainingMetricConfig_(sheetByKey_(ss, 'Settings'));
   const metricList = metricCfg.list.length ? metricCfg.list : TRAINING_METRICS;
   sheet.getRange('K5').setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(metricList).build());
 
@@ -1011,7 +1011,7 @@ function prepareEventEntryTab() {
 
 function applyEventEntryRows() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = ss.getSheetByName('Event Entry');
+  const sheet = sheetByKey_(ss, 'Event Entry');
   if (!sheet || sheet.getLastRow() < 2) return;
 
   const rows = sheet.getRange(2, 1, sheet.getLastRow() - 1, 6).getValues();
@@ -1044,14 +1044,14 @@ function applyEventEntryRows() {
 
 function migrateExistingTablesToEventLog() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const custSheet = ss.getSheetByName('Customers');
-  const routeSheet = ss.getSheetByName('Routes');
-  const logSheet = ss.getSheetByName('Logbook');
-  const trainingSheet = ss.getSheetByName('TrainingLog');
+  const custSheet = sheetByKey_(ss, 'Customers');
+  const routeSheet = sheetByKey_(ss, 'Routes');
+  const logSheet = sheetByKey_(ss, 'Logbook');
+  const trainingSheet = sheetByKey_(ss, 'TrainingLog');
   if (!custSheet || !routeSheet || !logSheet || !trainingSheet) return;
 
   const actor = 'migration';
-  const existingEventSheet = ss.getSheetByName('EventLog');
+  const existingEventSheet = sheetByKey_(ss, 'EventLog');
   if (existingEventSheet && existingEventSheet.getLastRow() > 1) {
     const ui = SpreadsheetApp.getUi();
     const res = ui.alert('EventLog already has data', 'Append migration events anyway?', ui.ButtonSet.YES_NO);
@@ -1094,11 +1094,11 @@ function migrateExistingTablesToEventLog() {
 function refreshProfileTabs_() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const ja = getUiLanguage_() === 'JA';
-  const custSheet = ss.getSheetByName('Customers');
-  const routeSheet = ss.getSheetByName('Routes');
-  const logSheet = ss.getSheetByName('Logbook');
-  const customerProfile = ss.getSheetByName('Customer Profile');
-  const routeProfile = ss.getSheetByName('Route Profile');
+  const custSheet = sheetByKey_(ss, 'Customers');
+  const routeSheet = sheetByKey_(ss, 'Routes');
+  const logSheet = sheetByKey_(ss, 'Logbook');
+  const customerProfile = sheetByKey_(ss, 'Customer Profile');
+  const routeProfile = sheetByKey_(ss, 'Route Profile');
 
   if (!custSheet || !routeSheet || !logSheet || !customerProfile || !routeProfile) return;
 
@@ -1223,8 +1223,8 @@ function getTrainingMetricConfig_(settingsSheet) {
 
 function autofillTrainingUnitFromMetric_() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const profile = ss.getSheetByName('Customer Profile');
-  const settings = ss.getSheetByName('Settings');
+  const profile = sheetByKey_(ss, 'Customer Profile');
+  const settings = sheetByKey_(ss, 'Settings');
   if (!profile || !settings) return;
 
   const metric = String(profile.getRange('J8').getValue() || '').trim();
@@ -1244,7 +1244,7 @@ function importDemoTestData() {
   if (res !== ui.Button.YES) return;
 
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const eventSheet = ss.getSheetByName('EventLog');
+  const eventSheet = sheetByKey_(ss, 'EventLog');
   if (!eventSheet) return;
 
   const base = new Date();
@@ -1318,7 +1318,7 @@ function resetDataSafe() {
   clearSheetDataRows_('Routes', 7);
   clearSheetDataRows_('Logbook', 9);
   clearSheetDataRows_('TrainingLog', 7);
-  clearSheetDataRows_('Data', Math.max(4, ss.getSheetByName('Data') ? ss.getSheetByName('Data').getMaxColumns() : 4));
+  clearSheetDataRows_('Data', Math.max(4, sheetByKey_(ss, 'Data') ? sheetByKey_(ss, 'Data').getMaxColumns() : 4));
   clearSheetDataRows_('Rankings View', 7);
   clearSheetDataRows_('New Routes', 6);
 
@@ -1347,7 +1347,7 @@ function clearSheetDataRows_(sheetName, cols) {
 
 function applyEventEntryUiActions_(a1) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = ss.getSheetByName('Event Entry');
+  const sheet = sheetByKey_(ss, 'Event Entry');
   if (!sheet) return;
 
   if (a1 === 'B9') {
@@ -1539,7 +1539,7 @@ function ensureUiLanguageSetting_(settingsSheet) {
 function getUiLanguage_() {
   try {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
-    const settings = ss.getSheetByName('Settings');
+    const settings = sheetByKey_(ss, 'Settings');
     if (!settings) return 'EN';
     const v = String(settings.getRange('J2').getValue() || 'EN').toUpperCase();
     return v === 'JA' ? 'JA' : 'EN';
@@ -1555,7 +1555,7 @@ function t_(key) {
 
 function normalizeUiLanguageCell_() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const settings = ss.getSheetByName('Settings');
+  const settings = sheetByKey_(ss, 'Settings');
   if (!settings) return;
 
   const raw = settings.getRange('J2').getDisplayValue();
@@ -1568,10 +1568,10 @@ function applySheetHeadersLanguage_() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const ja = getUiLanguage_() === 'JA';
 
-  const data = ss.getSheetByName('Data');
+  const data = sheetByKey_(ss, 'Data');
   if (data) data.getRange('A1:D1').setValues([[ja ? 'プロフィール' : 'Open Profile', ja ? '顧客' : 'Customer', ja ? '課題' : 'Route', ja ? '状態' : 'Status']]);
 
-  const customers = ss.getSheetByName('Customers');
+  const customers = sheetByKey_(ss, 'Customers');
   if (customers) {
     customers.getRange('A1:L1').setValues([[
       'ID',
@@ -1589,7 +1589,7 @@ function applySheetHeadersLanguage_() {
     ]]);
   }
 
-  const routes = ss.getSheetByName('Routes');
+  const routes = sheetByKey_(ss, 'Routes');
   if (routes) {
     routes.getRange('A1:G1').setValues([[
       'ID',
@@ -1602,7 +1602,7 @@ function applySheetHeadersLanguage_() {
     ]]);
   }
 
-  const settings = ss.getSheetByName('Settings');
+  const settings = sheetByKey_(ss, 'Settings');
   if (settings) {
     settings.getRange('A1:D1').setValues([[
       ja ? '記号' : 'Status',
@@ -1614,17 +1614,17 @@ function applySheetHeadersLanguage_() {
     settings.getRange('J1').setValue(ja ? 'UI言語' : 'UI Language');
   }
 
-  const logbook = ss.getSheetByName('Logbook');
+  const logbook = sheetByKey_(ss, 'Logbook');
   if (logbook) {
     logbook.getRange('A1:I1').setValues([[ja ? '日時' : 'Timestamp', ja ? '顧客ID' : 'Customer ID', ja ? '課題ID' : 'Route ID', ja ? '状態' : 'Status', ja ? 'グレード' : 'Grade', ja ? '身長' : 'Height', ja ? '年齢' : 'Age', ja ? '経験' : 'Experience', ja ? '性別' : 'Gender']]);
   }
 
-  const tlog = ss.getSheetByName('TrainingLog');
+  const tlog = sheetByKey_(ss, 'TrainingLog');
   if (tlog) {
     tlog.getRange('A1:G1').setValues([[ja ? '日時' : 'Timestamp', ja ? '顧客ID' : 'Customer ID', ja ? '顧客名' : 'Customer Name', ja ? '指標' : 'Metric', ja ? '値' : 'Value', ja ? '単位' : 'Unit', ja ? 'メモ' : 'Notes']]);
   }
 
-  const elog = ss.getSheetByName('EventLog');
+  const elog = sheetByKey_(ss, 'EventLog');
   if (elog) {
     elog.getRange('A1:G1').setValues([[ja ? '日時' : 'Timestamp', ja ? 'イベント種別' : 'Event Type', ja ? 'エンティティ種別' : 'Entity Type', ja ? 'エンティティID' : 'Entity ID', ja ? 'ペイロードJSON' : 'Payload JSON', ja ? '実行者' : 'Actor', ja ? 'スキーマ版' : 'Schema Version']]);
   }

@@ -25,22 +25,22 @@ function refreshPublicViews() {
 function refreshRankingsView_() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const ja = (typeof getUiLanguage_ === 'function' && getUiLanguage_() === 'JA');
-  const customers = ss.getSheetByName('Customers');
+  const customers = sheetByKey_(ss, 'Customers');
   if (!customers) return;
 
   const target = ensureSheet_('Rankings View');
   const lastRow = customers.getLastRow();
 
-  target.clear();
   const prevSort = target.getRange('J1').getValue();
-  target.getRange('I1').setValue(ja ? '並び替え' : 'Sort By');
-  target.getRange('J1').setValue(prevSort || 'Points');
-  target.getRange('A1:H2').clearContent();
+  target.clear();
+  target.getRange('A1').setValue(ja ? '並び替え' : 'Sort By');
+  target.getRange('B1').setValue(prevSort || 'Points');
+  target.getRange('C1:G2').clearContent();
 
   const sortValidation = SpreadsheetApp.newDataValidation()
     .requireValueInList(['Points', 'Completion Rate', 'Japanese Level', 'Name', 'V Scale Level'])
     .build();
-  target.getRange('J1').setDataValidation(sortValidation);
+  target.getRange('B1').setDataValidation(sortValidation);
 
   target.getRange('A3:G3').setValues([[
     ja ? '順位' : 'Rank',
@@ -55,7 +55,7 @@ function refreshRankingsView_() {
 
   if (lastRow < 2) return;
 
-  const sortBy = String(target.getRange('J1').getValue() || 'Points');
+  const sortBy = String(target.getRange('B1').getValue() || 'Points');
 
   const rows = customers.getRange(2, 1, lastRow - 1, 12).getValues()
     .filter(r => r[0] && r[1])
@@ -103,8 +103,8 @@ function refreshRankingsView_() {
   target.setColumnWidth(5, 110);
   target.setColumnWidth(6, 120);
   target.setColumnWidth(7, 130);
-  target.setColumnWidth(9, 100);
-  target.setColumnWidth(10, 140);
+  target.setColumnWidth(1, 100);
+  target.setColumnWidth(2, 140);
 }
 
 function vLevelSortKey_(value) {
@@ -139,7 +139,7 @@ function levelSortKey_(jLevel, vLevel) {
 function refreshNewRoutesView_(daysWindow) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const ja = (typeof getUiLanguage_ === 'function' && getUiLanguage_() === 'JA');
-  const routes = ss.getSheetByName('Routes');
+  const routes = sheetByKey_(ss, 'Routes');
   if (!routes) return;
 
   const target = ensureSheet_('New Routes');
