@@ -242,6 +242,11 @@ function handleEdit(e) {
     return;
   }
 
+  if (sheetName === 'Rankings View') {
+    if (e.range.getA1Notation() === 'B1') refreshRankingsView_();
+    return;
+  }
+
   if (sheet.getName() === 'Event Entry') {
     if (e.value === 'TRUE') applyEventEntryUiActions_(e.range.getA1Notation());
     return;
@@ -1154,15 +1159,15 @@ function importDemoTestData() {
   customers.forEach(c => appendStructuredEvent_('CUSTOMER_CREATED', 'customer', c.id, c, 'demo-seed'));
   routes.forEach(r => appendStructuredEvent_('ROUTE_CREATED', 'route', r.id, r, 'demo-seed'));
 
-  for (let i = 0; i < 220; i++) {
+  for (let i = 0; i < 1400; i++) {
     const c = customers[i % customers.length];
     const r = routes[(i * 3) % routes.length];
-    const ts = new Date(base.getTime() - (220 - i) * 8 * 60000).toISOString();
+    const ts = new Date(base.getTime() - (1400 - i) * 4 * 60000).toISOString();
     appendStructuredEvent_('CLIMB_LOGGED', 'climb', `${c.id}_${r.id}`, {
       timestamp: ts,
       customerId: c.id,
       routeId: r.id,
-      status: statuses[i % statuses.length],
+      status: i % 10 < 3 ? '◎' : (i % 10 < 6 ? '◯' : (i % 10 < 8 ? '△' : '✓')),
       grade: r.difficulty,
       height: c.height,
       experience: c.experience,
@@ -1170,7 +1175,7 @@ function importDemoTestData() {
     }, 'demo-seed');
   }
 
-  for (let i = 0; i < 80; i++) {
+  for (let i = 0; i < 240; i++) {
     const c = customers[(i * 5) % customers.length];
     const metric = metrics[i % metrics.length];
     const ts = new Date(base.getTime() - (80 - i) * 15 * 60000).toISOString();

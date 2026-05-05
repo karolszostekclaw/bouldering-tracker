@@ -105,8 +105,16 @@ function refreshRankingsView_() {
 function vLevelSortKey_(value) {
   const text = String(value || '');
   if (!text || text === 'No Sends') return -1;
-  const m = text.match(/V(\d+)/i);
-  return m ? Number(m[1]) : -1;
+
+  const nums = Array.from(text.matchAll(/V(\d+)/gi)).map(m => Number(m[1]));
+  if (!nums.length) return -1;
+
+  // Handle ranges like V0-V1 / V3-V4 by averaging
+  const avg = nums.reduce((a, b) => a + b, 0) / nums.length;
+
+  // Tiny bonus for '+' and tiny penalty for '-' when present
+  const bias = text.includes('+') ? 0.1 : (text.includes('-') && nums.length === 1 ? -0.1 : 0);
+  return avg + bias;
 }
 
 function levelSortKey_(jLevel, vLevel) {
