@@ -280,6 +280,11 @@ function handleEdit(e) {
   if (sheetName === 'Customer Profile') {
     const a1cp = e.range.getA1Notation();
 
+    if (a1cp === 'A1') {
+      refreshProfileTabs_();
+      return;
+    }
+
     if (a1cp === 'J8') {
       autofillTrainingUnitFromMetric_();
       return;
@@ -296,6 +301,11 @@ function handleEdit(e) {
       logTrainingFromCustomerProfile();
       return;
     }
+    return;
+  }
+
+  if (sheetName === 'Route Profile') {
+    if (e.range.getA1Notation() === 'A1') refreshProfileTabs_();
     return;
   }
 
@@ -590,6 +600,24 @@ function updateLogDropdowns() {
     // Quick-action checkboxes replacing drawing buttons
     profileSheet.getRange('K3').insertCheckboxes();
     profileSheet.getRange('K11').insertCheckboxes();
+
+    // Optional direct ID selection in profile A1
+    const custIdList = custData.map(row => row[0]).filter(String);
+    profileSheet.getRange('A1').setDataValidation(
+      SpreadsheetApp.newDataValidation()
+        .requireValueInList(custIdList.length ? custIdList : ['No customers yet'])
+        .build()
+    );
+  }
+
+  const routeProfileSheet = ss.getSheetByName('Route Profile');
+  if (routeProfileSheet) {
+    const routeIdList = routeData.map(row => row[0]).filter(String);
+    routeProfileSheet.getRange('A1').setDataValidation(
+      SpreadsheetApp.newDataValidation()
+        .requireValueInList(routeIdList.length ? routeIdList : ['No routes yet'])
+        .build()
+    );
   }
 }
 
