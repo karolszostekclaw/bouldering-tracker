@@ -92,6 +92,7 @@ function setupSpreadsheet() {
 
 function applyUiLanguage() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
+  ensureUiLanguageSetting_(ss.getSheetByName('Settings'));
   const lang = getUiLanguage_();
   const settings = ss.getSheetByName('Settings');
   if (settings) {
@@ -1520,8 +1521,12 @@ function ensureUiLanguageSetting_(settingsSheet) {
   if (!settingsSheet) return;
   settingsSheet.getRange('J1').setValue('UI Language');
   if (!settingsSheet.getRange('J2').getValue()) settingsSheet.getRange('J2').setValue('EN');
+  settingsSheet.getRange('J2').clearDataValidations();
   settingsSheet.getRange('J2').setDataValidation(
-    SpreadsheetApp.newDataValidation().requireValueInList(['EN', 'JA']).build()
+    SpreadsheetApp.newDataValidation()
+      .requireValueInList(['EN', 'JA'], true)
+      .setAllowInvalid(false)
+      .build()
   );
 }
 
