@@ -53,6 +53,10 @@ git pull
 ./update.sh
 ```
 
+## UI language (EN/JA)
+- In `Settings`, set `J2` (`UI Language`) to `EN` or `JA`.
+- Then run **Tracker Tools → Apply UI Language**.
+
 ## Data model (important)
 Source-of-truth tabs:
 - `Customers`

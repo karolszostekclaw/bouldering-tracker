@@ -24,6 +24,7 @@ function refreshPublicViews() {
 
 function refreshRankingsView_() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ja = (typeof getUiLanguage_ === 'function' && getUiLanguage_() === 'JA');
   const customers = ss.getSheetByName('Customers');
   if (!customers) return;
 
@@ -31,12 +32,12 @@ function refreshRankingsView_() {
   const lastRow = customers.getLastRow();
 
   target.clear();
-  target.getRange('A1').setValue('Sort By');
+  target.getRange('A1').setValue(ja ? '並び替え' : 'Sort By');
   target.getRange('B1').setValue(target.getRange('B1').getValue() || 'Points');
   target.getRange('C1:F1').setValues([[
     'Points',
     'Completion Rate',
-    'Japanese Level',
+    ja ? 'Japanese Level' : 'Japanese Level',
     'Name'
   ]]);
 
@@ -46,12 +47,12 @@ function refreshRankingsView_() {
   target.getRange('B1').setDataValidation(sortValidation);
 
   target.getRange('A3:G3').setValues([[
-    'Rank',
-    'Customer ID',
-    'Name',
+    ja ? '順位' : 'Rank',
+    ja ? '顧客ID' : 'Customer ID',
+    ja ? '名前' : 'Name',
     'Points',
-    'Completion Rate',
-    'Japanese Level',
+    ja ? '完登率' : 'Completion Rate',
+    ja ? '和グレード' : 'Japanese Level',
     'V Scale Level'
   ]]);
   target.setFrozenRows(3);
@@ -133,6 +134,7 @@ function levelSortKey_(jLevel, vLevel) {
 
 function refreshNewRoutesView_(daysWindow) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ja = (typeof getUiLanguage_ === 'function' && getUiLanguage_() === 'JA');
   const routes = ss.getSheetByName('Routes');
   if (!routes) return;
 
@@ -141,12 +143,12 @@ function refreshNewRoutesView_(daysWindow) {
 
   target.clear();
   target.getRange('A1:F1').setValues([[
-    'Added At',
-    'Route ID',
-    'Route Name',
-    'Difficulty Number',
-    'Japanese Grade',
-    'V Scale Grade'
+    ja ? '追加日時' : 'Added At',
+    ja ? '課題ID' : 'Route ID',
+    ja ? '課題名' : 'Route Name',
+    ja ? '難易度値' : 'Difficulty Number',
+    ja ? '和グレード' : 'Japanese Grade',
+    ja ? 'Vグレード' : 'V Scale Grade'
   ]]);
   target.setFrozenRows(1);
 

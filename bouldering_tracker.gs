@@ -4,23 +4,63 @@ const EVENT_LOG_SCHEMA_VERSION = 1;
 const EVENT_ENTRY_TYPES = ['CUSTOMER_CREATED', 'CUSTOMER_UPDATED', 'ROUTE_CREATED', 'CLIMB_LOGGED', 'TRAINING_LOGGED'];
 const GRADE_CONVERSION_SHEET = 'GradeConversion';
 
+const I18N = {
+  EN: {
+    MENU: '🧗‍♂️ Tracker Tools',
+    SETUP: 'Setup / Repair Spreadsheet',
+    POST_UPDATE: 'Run Post-Update Routine',
+    SYNC: 'Sync IDs & Dashboards',
+    TRIGGER: 'Install / Repair Edit Trigger',
+    REFRESH_PUBLIC: 'Refresh Rankings & New Routes Views',
+    REBUILD: 'Rebuild Tables from EventLog',
+    EVENT_ENTRY: 'Prepare Event Entry Tab',
+    APPLY_EVENT_ROWS: 'Apply Event Entry Rows',
+    MIGRATE: 'Migrate Existing Tables to EventLog',
+    IMPORT_DEMO: 'Import Demo/Test Data',
+    RESET: 'Reset Data (Safe)',
+    APPLY_LANG: 'Apply UI Language',
+    LOG_CLIMB_DATA: 'Log Climb from Data Sheet',
+    LOG_CLIMB_PROFILE: 'Log Climb from Customer Profile',
+    LOG_TRAINING: 'Log Training from Customer Profile'
+  },
+  JA: {
+    MENU: '🧗‍♂️ トラッカーツール',
+    SETUP: '初期設定 / 修復',
+    POST_UPDATE: '更新後ルーチン実行',
+    SYNC: 'ID・ダッシュボード同期',
+    TRIGGER: '編集トリガー再設定',
+    REFRESH_PUBLIC: 'ランキング・新規課題更新',
+    REBUILD: 'EventLog から再構築',
+    EVENT_ENTRY: 'イベント入力タブ作成',
+    APPLY_EVENT_ROWS: 'イベント行を適用',
+    MIGRATE: '既存テーブルを EventLog へ移行',
+    IMPORT_DEMO: 'デモ/テストデータ投入',
+    RESET: 'データ初期化（安全）',
+    APPLY_LANG: 'UI言語を反映',
+    LOG_CLIMB_DATA: 'Data から登攀記録',
+    LOG_CLIMB_PROFILE: 'Profile から登攀記録',
+    LOG_TRAINING: 'Profile からトレーニング記録'
+  }
+};
+
 function onOpen() {
-  SpreadsheetApp.getUi().createMenu('🧗‍♂️ Tracker Tools')
-    .addItem('Setup / Repair Spreadsheet', 'setupSpreadsheet')
-    .addItem('Run Post-Update Routine', 'runPostUpdateRoutine')
-    .addItem('Sync IDs & Dashboards', 'syncTracker')
-    .addItem('Install / Repair Edit Trigger', 'installTriggers')
-    .addItem('Refresh Rankings & New Routes Views', 'refreshPublicViews')
-    .addItem('Rebuild Tables from EventLog', 'rebuildTablesFromEventLog')
-    .addItem('Prepare Event Entry Tab', 'prepareEventEntryTab')
-    .addItem('Apply Event Entry Rows', 'applyEventEntryRows')
-    .addItem('Migrate Existing Tables to EventLog', 'migrateExistingTablesToEventLog')
-    .addItem('Import Demo/Test Data', 'importDemoTestData')
-    .addItem('Reset Data (Safe)', 'resetDataSafe')
+  SpreadsheetApp.getUi().createMenu(t_('MENU'))
+    .addItem(t_('SETUP'), 'setupSpreadsheet')
+    .addItem(t_('POST_UPDATE'), 'runPostUpdateRoutine')
+    .addItem(t_('SYNC'), 'syncTracker')
+    .addItem(t_('TRIGGER'), 'installTriggers')
+    .addItem(t_('REFRESH_PUBLIC'), 'refreshPublicViews')
+    .addItem(t_('REBUILD'), 'rebuildTablesFromEventLog')
+    .addItem(t_('EVENT_ENTRY'), 'prepareEventEntryTab')
+    .addItem(t_('APPLY_EVENT_ROWS'), 'applyEventEntryRows')
+    .addItem(t_('MIGRATE'), 'migrateExistingTablesToEventLog')
+    .addItem(t_('IMPORT_DEMO'), 'importDemoTestData')
+    .addItem(t_('RESET'), 'resetDataSafe')
+    .addItem(t_('APPLY_LANG'), 'applyUiLanguage')
     .addSeparator()
-    .addItem('Log Climb from Data Sheet', 'logFromDataSheet')
-    .addItem('Log Climb from Customer Profile', 'logClimbFromProfile')
-    .addItem('Log Training from Customer Profile', 'logTrainingFromCustomerProfile')
+    .addItem(t_('LOG_CLIMB_DATA'), 'logFromDataSheet')
+    .addItem(t_('LOG_CLIMB_PROFILE'), 'logClimbFromProfile')
+    .addItem(t_('LOG_TRAINING'), 'logTrainingFromCustomerProfile')
     .addToUi();
 }
 
@@ -39,6 +79,7 @@ function setupSpreadsheet() {
   ensureSheetWithHeaders_(ss, 'Route Profile', ['Route ID']);
 
   seedDefaultSettings_();
+  ensureUiLanguageSetting_(ss.getSheetByName('Settings'));
   ensureTrainingMetricConfig_(ss.getSheetByName('Settings'));
   ensureGradeConversionSheet_(ss);
   prepareEventEntryTab();
@@ -47,6 +88,21 @@ function setupSpreadsheet() {
   refreshPublicViews();
   refreshProfileTabs_();
   ss.toast('Spreadsheet setup complete.', 'Tracker Tools');
+}
+
+function applyUiLanguage() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const lang = getUiLanguage_();
+  const settings = ss.getSheetByName('Settings');
+  if (settings) {
+    settings.getRange('J1').setValue('UI Language');
+    settings.getRange('J2').setValue(lang);
+  }
+  prepareEventEntryTab();
+  refreshProfileTabs_();
+  refreshPublicViews();
+  onOpen();
+  SpreadsheetApp.getActive().toast(`UI language applied: ${lang}`, 'Tracker Tools');
 }
 
 function runPostUpdateRoutine() {
@@ -835,10 +891,11 @@ function safeParseJson_(value) {
 function prepareEventEntryTab() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sheet = ss.getSheetByName('Event Entry') || ss.insertSheet('Event Entry');
+  const ja = getUiLanguage_() === 'JA';
   sheet.clear();
   sheet.setFrozenRows(20);
 
-  sheet.getRange('A1').setValue('Customer Event');
+  sheet.getRange('A1').setValue(ja ? '顧客イベント' : 'Customer Event');
   sheet.getRange('A2:B8').setValues([
     ['Mode (CREATE/UPDATE)', 'CREATE'],
     ['Customer ID', ''],
@@ -848,12 +905,12 @@ function prepareEventEntryTab() {
     ['Experience', ''],
     ['Gender', '']
   ]);
-  sheet.getRange('A9').setValue('Apply Customer Event');
+  sheet.getRange('A9').setValue(ja ? '顧客イベントを適用' : 'Apply Customer Event');
   sheet.getRange('B9').insertCheckboxes();
   sheet.getRange('B2').setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(['CREATE', 'UPDATE']).build());
   sheet.getRange('B8').setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(['M', 'F', 'Other']).build());
 
-  sheet.getRange('D1').setValue('Route Event');
+  sheet.getRange('D1').setValue(ja ? '課題イベント' : 'Route Event');
   sheet.getRange('D2:E7').setValues([
     ['Route ID', ''],
     ['Route Name', ''],
@@ -864,7 +921,7 @@ function prepareEventEntryTab() {
   ]);
   sheet.getRange('E7').insertCheckboxes();
 
-  sheet.getRange('G1').setValue('Climb Event');
+  sheet.getRange('G1').setValue(ja ? '登攀イベント' : 'Climb Event');
   sheet.getRange('G2:H10').setValues([
     ['Timestamp (optional ISO)', ''],
     ['Customer ID', ''],
@@ -876,7 +933,7 @@ function prepareEventEntryTab() {
     ['Experience (optional)', ''],
     ['Gender (optional)', '']
   ]);
-  sheet.getRange('G11').setValue('Apply Climb Event');
+  sheet.getRange('G11').setValue(ja ? '登攀イベントを適用' : 'Apply Climb Event');
   sheet.getRange('H11').insertCheckboxes();
 
   const settings = ss.getSheetByName('Settings');
@@ -887,7 +944,7 @@ function prepareEventEntryTab() {
     }
   }
 
-  sheet.getRange('J1').setValue('Training Event');
+  sheet.getRange('J1').setValue(ja ? 'トレーニングイベント' : 'Training Event');
   sheet.getRange('J2:K8').setValues([
     ['Timestamp (optional ISO)', ''],
     ['Customer ID', ''],
@@ -897,7 +954,7 @@ function prepareEventEntryTab() {
     ['Unit', ''],
     ['Notes', '']
   ]);
-  sheet.getRange('J9').setValue('Apply Training Event');
+  sheet.getRange('J9').setValue(ja ? 'トレーニングイベントを適用' : 'Apply Training Event');
   sheet.getRange('K9').insertCheckboxes();
   const metricCfg = getTrainingMetricConfig_(ss.getSheetByName('Settings'));
   const metricList = metricCfg.list.length ? metricCfg.list : TRAINING_METRICS;
@@ -996,6 +1053,7 @@ function migrateExistingTablesToEventLog() {
 
 function refreshProfileTabs_() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ja = getUiLanguage_() === 'JA';
   const custSheet = ss.getSheetByName('Customers');
   const routeSheet = ss.getSheetByName('Routes');
   const logSheet = ss.getSheetByName('Logbook');
@@ -1005,10 +1063,10 @@ function refreshProfileTabs_() {
   if (!custSheet || !routeSheet || !logSheet || !customerProfile || !routeProfile) return;
 
   // Customer Profile input labels (right-side quick log UI)
-  customerProfile.getRange('I2:I3').setValues([['Log Climb Route'], ['Log Climb Status']]);
-  customerProfile.getRange('I8:I11').setValues([['Training Metric'], ['Training Value'], ['Training Unit'], ['Training Notes']]);
-  customerProfile.getRange('I1').setValue('Quick Actions');
-  customerProfile.getRange('I12').setValue('Tick K3 to log climb / K11 to log training');
+  customerProfile.getRange('I2:I3').setValues([[ja ? '登攀ルート' : 'Log Climb Route'], [ja ? '登攀ステータス' : 'Log Climb Status']]);
+  customerProfile.getRange('I8:I11').setValues([[ja ? 'トレーニング指標' : 'Training Metric'], [ja ? 'トレーニング値' : 'Training Value'], [ja ? '単位' : 'Training Unit'], [ja ? 'メモ' : 'Training Notes']]);
+  customerProfile.getRange('I1').setValue(ja ? 'クイック操作' : 'Quick Actions');
+  customerProfile.getRange('I12').setValue(ja ? 'K3で登攀記録 / K11でトレ記録' : 'Tick K3 to log climb / K11 to log training');
 
   const customerId = String(customerProfile.getRange('A1').getValue() || '');
   customerProfile.getRange('A3:B12').clearContent();
@@ -1422,4 +1480,30 @@ function parseMaybeDate_(value) {
   if (value instanceof Date) return value;
   const d = new Date(value);
   return isNaN(d.getTime()) ? value : d;
+}
+
+function ensureUiLanguageSetting_(settingsSheet) {
+  if (!settingsSheet) return;
+  settingsSheet.getRange('J1').setValue('UI Language');
+  if (!settingsSheet.getRange('J2').getValue()) settingsSheet.getRange('J2').setValue('EN');
+  settingsSheet.getRange('J2').setDataValidation(
+    SpreadsheetApp.newDataValidation().requireValueInList(['EN', 'JA']).build()
+  );
+}
+
+function getUiLanguage_() {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const settings = ss.getSheetByName('Settings');
+    if (!settings) return 'EN';
+    const v = String(settings.getRange('J2').getValue() || 'EN').toUpperCase();
+    return v === 'JA' ? 'JA' : 'EN';
+  } catch (e) {
+    return 'EN';
+  }
+}
+
+function t_(key) {
+  const lang = getUiLanguage_();
+  return (I18N[lang] && I18N[lang][key]) || I18N.EN[key] || key;
 }

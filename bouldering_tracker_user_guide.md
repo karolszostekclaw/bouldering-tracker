@@ -15,6 +15,11 @@ Main workflow:
 
 ---
 
+## UI language (English / Japanese)
+
+- In `Settings`, set `UI Language` (`J2`) to `EN` or `JA`.
+- Run **Tracker Tools → Apply UI Language**.
+
 ## First-time setup
 
 Prerequisite (one-time per Google account):
