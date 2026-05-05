@@ -281,6 +281,11 @@ function handleEdit(e) {
   const sheet = e.range.getSheet();
   const sheetName = sheet.getName();
 
+  if (sheetName === 'Settings' && e.range.getA1Notation() === 'J2') {
+    normalizeUiLanguageCell_();
+    return;
+  }
+
   if (sheetName === 'Customer Profile') {
     const a1cp = e.range.getA1Notation();
 
@@ -1528,6 +1533,7 @@ function ensureUiLanguageSetting_(settingsSheet) {
       .setAllowInvalid(false)
       .build()
   );
+  normalizeUiLanguageCell_();
 }
 
 function getUiLanguage_() {
@@ -1545,6 +1551,17 @@ function getUiLanguage_() {
 function t_(key) {
   const lang = getUiLanguage_();
   return (I18N[lang] && I18N[lang][key]) || I18N.EN[key] || key;
+}
+
+function normalizeUiLanguageCell_() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const settings = ss.getSheetByName('Settings');
+  if (!settings) return;
+
+  const raw = settings.getRange('J2').getDisplayValue();
+  const normalized = String(raw || '').trim().toUpperCase();
+  const finalValue = (normalized === 'JA' || normalized === 'EN') ? normalized : 'EN';
+  settings.getRange('J2').setValue(finalValue);
 }
 
 function applySheetHeadersLanguage_() {
