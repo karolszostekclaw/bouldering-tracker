@@ -25,9 +25,9 @@ After pasting/updating the Apps Script:
 
 1. Reload the spreadsheet.
 2. Open the custom menu: **🧗‍♂️ Tracker Tools**.
-3. Click **Install / Repair Edit Trigger**.
+3. Click **Setup / Repair Spreadsheet**.
 4. Approve the Google permissions if prompted.
-5. Click **Sync IDs & Dashboards** once.
+5. If needed, click **Sync IDs & Dashboards** once.
 
 You only need to install/repair the edit trigger when:
 
@@ -125,6 +125,10 @@ Customer-facing tab for recently added routes.
 - Uses route created timestamp (Routes column E).
 - Default window in script: last 14 days.
 - Shows newest routes first.
+
+### EventLog
+
+Operational event log (e.g. climb/training logging events) for audit/recovery context.
 
 ### Logbook
 

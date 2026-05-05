@@ -26,7 +26,7 @@ SHEET_ID="$1"
 PROJECT_TITLE="Bouldering Tracker"
 
 echo "🔐 Logging into Google (use karolszostekclaw@gmail.com)..."
-clasp login
+clasp login --no-localhost
 
 echo "🧩 Creating Apps Script project bound to sheet..."
 if [[ -f .clasp.json ]]; then
@@ -45,6 +45,6 @@ clasp push
 echo "✅ Setup complete."
 echo "Next in Google Sheet:"
 echo "1) Reload sheet"
-echo "2) Tracker Tools -> Install / Repair Edit Trigger"
-echo "3) Tracker Tools -> Sync IDs & Dashboards"
-echo "4) Tracker Tools -> Refresh Rankings & New Routes Views"
+echo "2) Tracker Tools -> Setup / Repair Spreadsheet"
+echo "3) If needed: Tracker Tools -> Sync IDs & Dashboards"
+echo "4) If needed: Tracker Tools -> Refresh Rankings & New Routes Views"

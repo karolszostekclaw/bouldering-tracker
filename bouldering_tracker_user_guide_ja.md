@@ -25,9 +25,9 @@ Apps Script を貼り付け・更新した後：
 
 1. スプレッドシートを再読み込みします。
 2. カスタムメニュー **🧗‍♂️ Tracker Tools** を開きます。
-3. **Install / Repair Edit Trigger** をクリックします。
+3. **Setup / Repair Spreadsheet** をクリックします。
 4. Google の権限承認画面が出たら承認します。
-5. **Sync IDs & Dashboards** を一度実行します。
+5. 必要に応じて **Sync IDs & Dashboards** を一度実行します。
 
 **Install / Repair Edit Trigger** は、以下の場合に再実行してください：
 
@@ -125,6 +125,10 @@ Apps Script を貼り付け・更新した後：
 - ルート追加日時（Routes の E列）を利用します。
 - スクリプトの初期設定は「直近14日」です。
 - 新しい課題ほど上に表示されます。
+
+### EventLog
+
+運用イベントログ（登攀ログ追加・トレーニング記録追加など）を保存します。監査や復旧時の確認に使います。
 
 ### Logbook
 

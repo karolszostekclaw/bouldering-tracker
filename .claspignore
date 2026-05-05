@@ -1,0 +1,6 @@
+**/**
+
+# Push only deployment artifacts
+!appsscript.json
+!Code.gs
+!Views.gs

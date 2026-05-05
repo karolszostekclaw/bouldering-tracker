@@ -30,5 +30,6 @@ clasp push
 
 echo "✅ Update pushed."
 echo "Recommended in sheet:"
+echo "- Run Setup / Repair Spreadsheet (safe, idempotent)"
 echo "- Run Sync IDs & Dashboards"
 echo "- Run Refresh Rankings & New Routes Views"

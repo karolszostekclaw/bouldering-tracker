@@ -1,14 +1,39 @@
 const TRAINING_METRICS = ['VR', 'CP', 'LH', 'RH', 'HS'];
+const REQUIRED_SHEETS = ['Data', 'Customers', 'Routes', 'Settings', 'Logbook', 'Customer Profile', 'Route Profile'];
+const EVENT_LOG_SCHEMA_VERSION = 1;
 
 function onOpen() {
   SpreadsheetApp.getUi().createMenu('🧗‍♂️ Tracker Tools')
+    .addItem('Setup / Repair Spreadsheet', 'setupSpreadsheet')
     .addItem('Sync IDs & Dashboards', 'syncTracker')
     .addItem('Install / Repair Edit Trigger', 'installTriggers')
+    .addItem('Refresh Rankings & New Routes Views', 'refreshPublicViews')
+    .addItem('Rebuild Tables from EventLog', 'rebuildTablesFromEventLog')
     .addSeparator()
     .addItem('Log Climb from Data Sheet', 'logFromDataSheet')
     .addItem('Log Climb from Customer Profile', 'logClimbFromProfile')
     .addItem('Log Training from Customer Profile', 'logTrainingFromCustomerProfile')
     .addToUi();
+}
+
+function setupSpreadsheet() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+
+  ensureSheetWithHeaders_(ss, 'Data', ['Open Profile', 'Customer', 'Route', 'Status']);
+  ensureSheetWithHeaders_(ss, 'Customers', ['ID', 'Name', 'Completion Rate', 'Points', 'V Scale Level', 'Birthday', 'Age', 'Height', 'Experience', 'Gender', 'Japanese Level', 'V Scale Level']);
+  ensureSheetWithHeaders_(ss, 'Routes', ['ID', 'Name', 'V Scale Difficulty', 'Link', 'Created At', 'Japanese Grade', 'V Scale Grade']);
+  ensureSheetWithHeaders_(ss, 'Settings', ['Status', 'Label', 'Score', 'Complete?']);
+  ensureSheetWithHeaders_(ss, 'Logbook', ['Timestamp', 'Customer ID', 'Route ID', 'Status', 'Grade', 'Height', 'Age', 'Experience', 'Gender']);
+  ensureSheetWithHeaders_(ss, 'TrainingLog', ['Timestamp', 'Customer ID', 'Customer Name', 'Metric', 'Value', 'Unit', 'Notes']);
+  ensureSheetWithHeaders_(ss, 'EventLog', ['Timestamp', 'Event Type', 'Entity Type', 'Entity ID', 'Payload JSON', 'Actor', 'Schema Version']);
+  ensureSheetWithHeaders_(ss, 'Customer Profile', ['Customer ID']);
+  ensureSheetWithHeaders_(ss, 'Route Profile', ['Route ID']);
+
+  seedDefaultSettings_();
+  installTriggers();
+  syncTracker();
+  refreshPublicViews();
+  ss.toast('Spreadsheet setup complete.', 'Tracker Tools');
 }
 
 function installTriggers() {
@@ -39,6 +64,7 @@ function syncTracker() {
 
   try {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
+    ensureRequiredSheets_(ss);
     const sheet = ss.getSheetByName('Data');
     const custSheet = ss.getSheetByName('Customers');
     const routeSheet = ss.getSheetByName('Routes');
@@ -252,7 +278,19 @@ function logFromDataSheet() {
   const exp = cMatch ? cMatch[8] : 'N/A';
   const gen = cMatch ? cMatch[9] : 'N/A';
 
-  logSheet.appendRow([new Date(), customerId, routeId, status, grade, height, age, exp, gen]);
+  const now = new Date();
+  logSheet.appendRow([now, customerId, routeId, status, grade, height, age, exp, gen]);
+  appendStructuredEvent_('CLIMB_LOGGED', 'climb', customerId + '_' + routeId, {
+    timestamp: now.toISOString(),
+    customerId,
+    routeId,
+    status,
+    grade,
+    height,
+    age,
+    experience: exp,
+    gender: gen
+  });
   sheet.getRange('B2:B3').clearContent();
 
   ss.toast('Climb logged!');
@@ -295,7 +333,19 @@ function logClimbFromProfile() {
   const exp = cMatch ? cMatch[8] : 'N/A';
   const gen = cMatch ? cMatch[9] : 'N/A';
 
-  logSheet.appendRow([new Date(), customerId, routeId, status, grade, height, age, exp, gen]);
+  const now = new Date();
+  logSheet.appendRow([now, customerId, routeId, status, grade, height, age, exp, gen]);
+  appendStructuredEvent_('CLIMB_LOGGED', 'climb', customerId + '_' + routeId, {
+    timestamp: now.toISOString(),
+    customerId,
+    routeId,
+    status,
+    grade,
+    height,
+    age,
+    experience: exp,
+    gender: gen
+  });
   profileSheet.getRange('J1:J2').clearContent();
 
   syncTracker();
@@ -337,8 +387,9 @@ function logTrainingFromCustomerProfile() {
   const customerName = cMatch ? cMatch[1] : '';
 
   const trainingLogSheet = ensureTrainingLogSheet_(ss);
+  const now = new Date();
   trainingLogSheet.appendRow([
-    new Date(),
+    now,
     customerId,
     customerName,
     metric,
@@ -346,6 +397,15 @@ function logTrainingFromCustomerProfile() {
     unit,
     notes
   ]);
+  appendStructuredEvent_('TRAINING_LOGGED', 'training', customerId, {
+    timestamp: now.toISOString(),
+    customerId,
+    customerName,
+    metric,
+    value,
+    unit,
+    notes
+  });
 
   profileSheet.getRange('J7:J10').clearContent();
   ss.toast('Training log added for ' + (customerName || customerId), 'Success');
@@ -426,7 +486,9 @@ function generateMissingIds_(sheet, prefix) {
   const lastRow = sheet.getLastRow();
   if (lastRow <= 1) return;
 
-  const idRange = sheet.getRange(2, 1, lastRow - 1, 2);
+  const isRoute = sheet.getName() === 'Routes';
+  const colCount = isRoute ? 5 : 2;
+  const idRange = sheet.getRange(2, 1, lastRow - 1, colCount);
   const values = idRange.getValues();
   const existingIds = new Set(values.map(row => row[0]).filter(String));
   let updated = false;
@@ -435,6 +497,20 @@ function generateMissingIds_(sheet, prefix) {
     if (row[1] !== '' && row[0] === '') {
       row[0] = makeUniqueId_(prefix, existingIds);
       existingIds.add(row[0]);
+      if (isRoute && !row[4]) row[4] = new Date();
+
+      appendStructuredEvent_(
+        prefix === 'C-' ? 'CUSTOMER_CREATED' : 'ROUTE_CREATED',
+        prefix === 'C-' ? 'customer' : 'route',
+        row[0],
+        {
+          id: row[0],
+          name: row[1],
+          difficulty: isRoute ? row[2] : undefined,
+          link: isRoute ? row[3] : undefined,
+          createdAt: isRoute && row[4] instanceof Date ? row[4].toISOString() : undefined
+        }
+      );
       updated = true;
     }
   });
@@ -510,4 +586,161 @@ function resolveRouteId_(value, routeRows) {
   }
 
   return { id: '', error: 'Route not found. Please select a route from the dropdown.' };
+}
+
+function ensureRequiredSheets_(ss) {
+  REQUIRED_SHEETS.forEach(name => {
+    if (!ss.getSheetByName(name)) ss.insertSheet(name);
+  });
+}
+
+function ensureSheetWithHeaders_(ss, name, headers) {
+  let sheet = ss.getSheetByName(name);
+  if (!sheet) sheet = ss.insertSheet(name);
+
+  const existing = sheet.getRange(1, 1, 1, headers.length).getValues()[0];
+  const empty = existing.every(v => v === '');
+  if (empty) {
+    sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+    sheet.setFrozenRows(1);
+  }
+}
+
+function seedDefaultSettings_() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const settings = ss.getSheetByName('Settings');
+  if (!settings) return;
+
+  const hasRows = settings.getLastRow() > 1;
+  if (hasRows) return;
+
+  settings.getRange(2, 1, 4, 4).setValues([
+    ['◎', 'Flash', 10, 1],
+    ['◯', 'Red-Point', 7, 1],
+    ['△', 'Foot-Follow', 5, 0],
+    ['✓', 'Attempt', 1, 0]
+  ]);
+}
+
+function appendStructuredEvent_(eventType, entityType, entityId, payload, actor) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName('EventLog');
+  if (!sheet) return;
+
+  const payloadText = JSON.stringify(payload || {});
+  sheet.appendRow([
+    new Date(),
+    eventType,
+    entityType || '',
+    entityId || '',
+    payloadText,
+    actor || Session.getActiveUser().getEmail() || 'unknown',
+    EVENT_LOG_SCHEMA_VERSION
+  ]);
+}
+
+function rebuildTablesFromEventLog() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const eventSheet = ss.getSheetByName('EventLog');
+  if (!eventSheet || eventSheet.getLastRow() < 2) {
+    SpreadsheetApp.getUi().alert('EventLog is empty. Nothing to rebuild.');
+    return;
+  }
+
+  const custSheet = ss.getSheetByName('Customers');
+  const routeSheet = ss.getSheetByName('Routes');
+  const logSheet = ss.getSheetByName('Logbook');
+  const trainingSheet = ensureTrainingLogSheet_(ss);
+  if (!custSheet || !routeSheet || !logSheet || !trainingSheet) return;
+
+  clearDataRows_(custSheet, 12);
+  clearDataRows_(routeSheet, 7);
+  clearDataRows_(logSheet, 9);
+  clearDataRows_(trainingSheet, 7);
+
+  const events = eventSheet.getRange(2, 1, eventSheet.getLastRow() - 1, 7).getValues();
+  const customers = [];
+  const routes = [];
+  const climbs = [];
+  const trainings = [];
+
+  events.forEach(ev => {
+    const eventType = String(ev[1] || '');
+    const payload = safeParseJson_(ev[4]);
+
+    if (eventType === 'CUSTOMER_CREATED' && payload.id && payload.name) {
+      customers.push([
+        payload.id,
+        payload.name,
+        '', '', '',
+        payload.birthday || '',
+        '',
+        payload.height || '',
+        payload.experience || '',
+        payload.gender || '',
+        '', ''
+      ]);
+    }
+
+    if (eventType === 'ROUTE_CREATED' && payload.id && payload.name) {
+      routes.push([
+        payload.id,
+        payload.name,
+        payload.difficulty || '',
+        payload.link || '',
+        payload.createdAt ? new Date(payload.createdAt) : '',
+        '',
+        ''
+      ]);
+    }
+
+    if (eventType === 'CLIMB_LOGGED' && payload.customerId && payload.routeId) {
+      climbs.push([
+        payload.timestamp ? new Date(payload.timestamp) : new Date(),
+        payload.customerId,
+        payload.routeId,
+        payload.status || '',
+        payload.grade || '',
+        payload.height || '',
+        payload.age || '',
+        payload.experience || '',
+        payload.gender || ''
+      ]);
+    }
+
+    if (eventType === 'TRAINING_LOGGED' && payload.customerId) {
+      trainings.push([
+        payload.timestamp ? new Date(payload.timestamp) : new Date(),
+        payload.customerId,
+        payload.customerName || '',
+        payload.metric || '',
+        payload.value || '',
+        payload.unit || '',
+        payload.notes || ''
+      ]);
+    }
+  });
+
+  if (customers.length) custSheet.getRange(2, 1, customers.length, 12).setValues(customers);
+  if (routes.length) routeSheet.getRange(2, 1, routes.length, 7).setValues(routes);
+  if (climbs.length) logSheet.getRange(2, 1, climbs.length, 9).setValues(climbs);
+  if (trainings.length) trainingSheet.getRange(2, 1, trainings.length, 7).setValues(trainings);
+
+  syncTracker();
+  refreshPublicViews();
+  SpreadsheetApp.getActive().toast('Rebuilt tables from EventLog.', 'Tracker Tools');
+}
+
+function clearDataRows_(sheet, cols) {
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) return;
+  sheet.getRange(2, 1, lastRow - 1, cols).clearContent();
+}
+
+function safeParseJson_(value) {
+  try {
+    return value ? JSON.parse(String(value)) : {};
+  } catch (e) {
+    return {};
+  }
 }

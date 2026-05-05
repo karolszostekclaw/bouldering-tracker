@@ -1,0 +1,10 @@
+Timestamp,Event Type,Entity Type,Entity ID,Payload JSON,Actor,Schema Version
+2026-05-01T09:00:00Z,CUSTOMER_CREATED,customer,C-ALPHA001,"{""id"":""C-ALPHA001"",""name"":""Aiko"",""height"":""162"",""experience"":""2y"",""gender"":""F""}",seed@test,1
+2026-05-01T09:05:00Z,CUSTOMER_CREATED,customer,C-BETA002,"{""id"":""C-BETA002"",""name"":""Ren"",""height"":""175"",""experience"":""1y"",""gender"":""M""}",seed@test,1
+2026-05-01T10:00:00Z,ROUTE_CREATED,route,R-RED001,"{""id"":""R-RED001"",""name"":""Red Slab"",""difficulty"":3,""link"":"""",""createdAt"":""2026-05-01T10:00:00Z""}",seed@test,1
+2026-05-01T10:05:00Z,ROUTE_CREATED,route,R-BLUE002,"{""id"":""R-BLUE002"",""name"":""Blue Arete"",""difficulty"":5,""link"":"""",""createdAt"":""2026-05-01T10:05:00Z""}",seed@test,1
+2026-05-01T12:00:00Z,CLIMB_LOGGED,climb,C-ALPHA001_R-RED001,"{""timestamp"":""2026-05-01T12:00:00Z"",""customerId"":""C-ALPHA001"",""routeId"":""R-RED001"",""status"":""◎"",""grade"":3,""height"":""162"",""age"":""25"",""experience"":""2y"",""gender"":""F""}",seed@test,1
+2026-05-01T12:10:00Z,CLIMB_LOGGED,climb,C-BETA002_R-RED001,"{""timestamp"":""2026-05-01T12:10:00Z"",""customerId"":""C-BETA002"",""routeId"":""R-RED001"",""status"":""◯"",""grade"":3,""height"":""175"",""age"":""29"",""experience"":""1y"",""gender"":""M""}",seed@test,1
+2026-05-01T12:20:00Z,CLIMB_LOGGED,climb,C-BETA002_R-BLUE002,"{""timestamp"":""2026-05-01T12:20:00Z"",""customerId"":""C-BETA002"",""routeId"":""R-BLUE002"",""status"":""△"",""grade"":5,""height"":""175"",""age"":""29"",""experience"":""1y"",""gender"":""M""}",seed@test,1
+2026-05-01T13:00:00Z,TRAINING_LOGGED,training,C-ALPHA001,"{""timestamp"":""2026-05-01T13:00:00Z"",""customerId"":""C-ALPHA001"",""customerName"":""Aiko"",""metric"":""VR"",""value"":12,""unit"":""reps"",""notes"":""warmup""}",seed@test,1
+2026-05-01T13:05:00Z,TRAINING_LOGGED,training,C-BETA002,"{""timestamp"":""2026-05-01T13:05:00Z"",""customerId"":""C-BETA002"",""customerName"":""Ren"",""metric"":""CP"",""value"":8.5,""unit"":""sec"",""notes"":""board test""}",seed@test,1

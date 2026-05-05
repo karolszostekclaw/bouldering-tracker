@@ -15,6 +15,11 @@ All notable changes to this tracker should be documented here.
 ### Added
 - Architecture and security/process documentation (`ARCHITECTURE.md`, `SECURITY.md`, `TESTING.md`).
 - Public view script scaffold for `Rankings View` and `New Routes` tabs (`bouldering_tracker_views.gs`).
+- `Setup / Repair Spreadsheet` flow that creates/repairs core tabs and seeds default Settings.
+- Structured EventLog schema (`payload_json`, `actor`, `schema_version`) and event appends for customer/route creation + climb/training logs.
+- `Rebuild Tables from EventLog` menu action to regenerate materialized tables.
+- Integration fixture: `testdata/events_fixture.csv`.
+- `.claspignore` + `appsscript.json` to prevent duplicate file pushes and stabilize deploys.
 - Setup/update helper scripts for macOS + Google Sheets deployment (`setup.sh`, `update.sh`).
 - Manual updates for first-time setup + public views in EN/JA guides.
 

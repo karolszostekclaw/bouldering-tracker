@@ -5,6 +5,8 @@ This directory contains all project-specific code and docs for the Google Sheets
 ## Files
 - `bouldering_tracker.gs` — main Apps Script
 - `bouldering_tracker_views.gs` — rankings/new-routes views
+- `appsscript.json` — Apps Script manifest
+- `.claspignore` — push only `Code.gs`, `Views.gs`, `appsscript.json`
 - `bouldering_tracker_user_guide.md` — manual (EN)
 - `bouldering_tracker_user_guide_ja.md` — manual (JA)
 - `ARCHITECTURE.md` — project architecture
@@ -50,6 +52,35 @@ cd <repo>
 git pull
 ./update.sh
 ```
+
+## Data model (important)
+Source-of-truth tabs:
+- `Customers`
+- `Routes`
+- `Logbook`
+- `TrainingLog`
+- `Settings`
+- `EventLog`
+
+Generated/rebuildable tabs:
+- `Data`
+- `Customer Profile`
+- `Route Profile`
+- `Rankings View`
+- `New Routes`
+
+Use `Setup / Repair Spreadsheet` + `Sync IDs & Dashboards` to rebuild generated tabs safely.
+
+## EventLog-first rebuild
+- Event schema columns: `Timestamp, Event Type, Entity Type, Entity ID, Payload JSON, Actor, Schema Version`.
+- Use menu: **Tracker Tools → Rebuild Tables from EventLog** to regenerate `Customers`, `Routes`, `Logbook`, `TrainingLog`.
+
+## Test fixture
+- Seed file: `testdata/events_fixture.csv`
+- Import it into `EventLog` (starting from row 2, keeping headers), then run:
+  - **Rebuild Tables from EventLog**
+  - **Sync IDs & Dashboards**
+  - **Refresh Rankings & New Routes Views**
 
 ## Process rule
 Any script change must include:
