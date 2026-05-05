@@ -28,7 +28,7 @@ function refreshRankingsView_() {
   const customers = sheetByKey_(ss, 'Customers');
   if (!customers) return;
 
-  const target = ensureSheet_('Rankings View');
+  const target = ensureSheetByKey_(ss, 'Rankings View');
   const lastRow = customers.getLastRow();
 
   const prevSort = target.getRange('J1').getValue();
@@ -142,7 +142,7 @@ function refreshNewRoutesView_(daysWindow) {
   const routes = sheetByKey_(ss, 'Routes');
   if (!routes) return;
 
-  const target = ensureSheet_('New Routes');
+  const target = ensureSheetByKey_(ss, 'New Routes');
   const lastRow = routes.getLastRow();
 
   target.clear();
@@ -187,7 +187,6 @@ function refreshNewRoutesView_(daysWindow) {
 
 function ensureSheet_(name) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  let sheet = ss.getSheetByName(name);
-  if (!sheet) sheet = ss.insertSheet(name);
+  let sheet = ensureSheetByKey_(ss, name);
   return sheet;
 }

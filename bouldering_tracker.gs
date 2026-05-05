@@ -3,6 +3,15 @@ const REQUIRED_SHEETS = ['Data', 'Customers', 'Routes', 'Settings', 'Logbook', '
 const EVENT_LOG_SCHEMA_VERSION = 1;
 const EVENT_ENTRY_TYPES = ['CUSTOMER_CREATED', 'CUSTOMER_UPDATED', 'ROUTE_CREATED', 'CLIMB_LOGGED', 'TRAINING_LOGGED'];
 const GRADE_CONVERSION_SHEET = 'GradeConversion';
+const SHEET_KEY_PREFIX = '[BT:';
+const SHEET_KEY_SUFFIX = ']';
+const LOCALIZABLE_SHEETS = {
+  'Customer Profile': { EN: 'Customer Profile', JA: '顧客プロフィール' },
+  'Route Profile': { EN: 'Route Profile', JA: '課題プロフィール' },
+  'Rankings View': { EN: 'Rankings View', JA: 'ランキング表示' },
+  'New Routes': { EN: 'New Routes', JA: '新着課題' },
+  'Event Entry': { EN: 'Event Entry', JA: 'イベント入力' }
+};
 
 const I18N = {
   EN: {
@@ -82,6 +91,7 @@ function setupSpreadsheet() {
   ensureUiLanguageSetting_(sheetByKey_(ss, 'Settings'));
   ensureTrainingMetricConfig_(sheetByKey_(ss, 'Settings'));
   ensureGradeConversionSheet_(ss);
+  ensureLocalizedSheetNames_();
   prepareEventEntryTab();
   installTriggers();
   syncTracker();
@@ -99,6 +109,7 @@ function applyUiLanguage() {
     settings.getRange('J1').setValue('UI Language');
     settings.getRange('J2').setValue(lang);
   }
+  ensureLocalizedSheetNames_();
   prepareEventEntryTab();
   refreshProfileTabs_();
   refreshPublicViews();
@@ -280,13 +291,14 @@ function handleEdit(e) {
 
   const sheet = e.range.getSheet();
   const sheetName = sheet.getName();
+  const sheetKey = extractSheetKey_(sheetName) || sheetName;
 
-  if (sheetName === 'Settings' && e.range.getA1Notation() === 'J2') {
+  if (sheetKey === 'Settings' && e.range.getA1Notation() === 'J2') {
     normalizeUiLanguageCell_();
     return;
   }
 
-  if (sheetName === 'Customer Profile') {
+  if (sheetKey === 'Customer Profile') {
     const a1cp = e.range.getA1Notation();
 
     if (a1cp === 'A1') {
@@ -313,22 +325,22 @@ function handleEdit(e) {
     return;
   }
 
-  if (sheetName === 'Route Profile') {
+  if (sheetKey === 'Route Profile') {
     if (e.range.getA1Notation() === 'A1') refreshProfileTabs_();
     return;
   }
 
-  if (sheetName === 'Rankings View') {
+  if (sheetKey === 'Rankings View') {
     if (e.range.getA1Notation() === 'B1') refreshRankingsView_();
     return;
   }
 
-  if (sheet.getName() === 'Event Entry') {
+  if (sheetKey === 'Event Entry') {
     if (e.value === 'TRUE') applyEventEntryUiActions_(e.range.getA1Notation());
     return;
   }
 
-  if (sheetName !== 'Data') return;
+  if (sheetKey !== 'Data') return;
 
   const row = e.range.getRow();
   const col = e.range.getColumn();
@@ -755,15 +767,59 @@ function resolveRouteId_(value, routeRows) {
   return { id: '', error: 'Route not found. Please select a route from the dropdown.' };
 }
 
+function makeSheetDisplayName_(key, lang) {
+  const base = (LOCALIZABLE_SHEETS[key] && LOCALIZABLE_SHEETS[key][lang]) || key;
+  return `${base} ${SHEET_KEY_PREFIX}${key}${SHEET_KEY_SUFFIX}`;
+}
+
+function extractSheetKey_(name) {
+  const text = String(name || '');
+  const start = text.lastIndexOf(SHEET_KEY_PREFIX);
+  const end = text.lastIndexOf(SHEET_KEY_SUFFIX);
+  if (start < 0 || end < start) return '';
+  return text.slice(start + SHEET_KEY_PREFIX.length, end).trim();
+}
+
+function sheetByKey_(ss, key) {
+  if (!ss) return null;
+  const exact = ss.getSheetByName(key);
+  if (exact) return exact;
+
+  const sheets = ss.getSheets();
+  for (const sheet of sheets) {
+    if (extractSheetKey_(sheet.getName()) === key) return sheet;
+  }
+  return null;
+}
+
+function ensureSheetByKey_(ss, key) {
+  let sheet = sheetByKey_(ss, key);
+  if (sheet) return sheet;
+  const lang = getUiLanguage_();
+  const name = LOCALIZABLE_SHEETS[key] ? makeSheetDisplayName_(key, lang) : key;
+  return ss.insertSheet(name);
+}
+
+function ensureLocalizedSheetNames_() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const lang = getUiLanguage_();
+
+  Object.keys(LOCALIZABLE_SHEETS).forEach(key => {
+    const sheet = sheetByKey_(ss, key);
+    if (!sheet) return;
+    const target = makeSheetDisplayName_(key, lang);
+    if (sheet.getName() !== target) sheet.setName(target);
+  });
+}
+
 function ensureRequiredSheets_(ss) {
   REQUIRED_SHEETS.forEach(name => {
-    if (!ss.getSheetByName(name)) ss.insertSheet(name);
+    if (!sheetByKey_(ss, name)) ss.insertSheet(name);
   });
 }
 
 function ensureSheetWithHeaders_(ss, name, headers) {
-  let sheet = ss.getSheetByName(name);
-  if (!sheet) sheet = ss.insertSheet(name);
+  let sheet = ensureSheetByKey_(ss, name);
 
   const existing = sheet.getRange(1, 1, 1, headers.length).getValues()[0];
   const empty = existing.every(v => v === '');
@@ -927,7 +983,7 @@ function safeParseJson_(value) {
 
 function prepareEventEntryTab() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = sheetByKey_(ss, 'Event Entry') || ss.insertSheet('Event Entry');
+  const sheet = ensureSheetByKey_(ss, 'Event Entry');
   const ja = getUiLanguage_() === 'JA';
   sheet.clear();
   sheet.setFrozenRows(20);
@@ -1338,7 +1394,7 @@ function resetDataSafe() {
 
 function clearSheetDataRows_(sheetName, cols) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = ss.getSheetByName(sheetName);
+  const sheet = sheetByKey_(ss, sheetName);
   if (!sheet) return;
   const lastRow = sheet.getLastRow();
   if (lastRow < 2) return;

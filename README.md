@@ -111,6 +111,12 @@ You can also publish Rankings as web page and embed with:
 <iframe src="PUBLISHED_RANKINGS_PAGE_URL" width="100%" height="800" frameborder="0"></iframe>
 ```
 
+## Support / bug reporting
+See `SUPPORT.md` for:
+- bug report template,
+- screenshot evidence checklist,
+- common issue fixes.
+
 ## Process rule
 Any script change must include:
 1. changelog update,
