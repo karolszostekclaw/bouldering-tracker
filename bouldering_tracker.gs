@@ -7,6 +7,7 @@ const GRADE_CONVERSION_SHEET = 'GradeConversion';
 function onOpen() {
   SpreadsheetApp.getUi().createMenu('🧗‍♂️ Tracker Tools')
     .addItem('Setup / Repair Spreadsheet', 'setupSpreadsheet')
+    .addItem('Run Post-Update Routine', 'runPostUpdateRoutine')
     .addItem('Sync IDs & Dashboards', 'syncTracker')
     .addItem('Install / Repair Edit Trigger', 'installTriggers')
     .addItem('Refresh Rankings & New Routes Views', 'refreshPublicViews')
@@ -14,6 +15,7 @@ function onOpen() {
     .addItem('Prepare Event Entry Tab', 'prepareEventEntryTab')
     .addItem('Apply Event Entry Rows', 'applyEventEntryRows')
     .addItem('Migrate Existing Tables to EventLog', 'migrateExistingTablesToEventLog')
+    .addItem('Import Demo/Test Data', 'importDemoTestData')
     .addSeparator()
     .addItem('Log Climb from Data Sheet', 'logFromDataSheet')
     .addItem('Log Climb from Customer Profile', 'logClimbFromProfile')
@@ -44,6 +46,18 @@ function setupSpreadsheet() {
   refreshPublicViews();
   refreshProfileTabs_();
   ss.toast('Spreadsheet setup complete.', 'Tracker Tools');
+}
+
+function runPostUpdateRoutine() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  ensureRequiredSheets_(ss);
+  ensureTrainingMetricConfig_(ss.getSheetByName('Settings'));
+  ensureGradeConversionSheet_(ss);
+  installTriggers();
+  syncTracker();
+  refreshPublicViews();
+  refreshProfileTabs_();
+  SpreadsheetApp.getActive().toast('Post-update routine completed.', 'Tracker Tools');
 }
 
 function installTriggers() {
@@ -1104,6 +1118,75 @@ function autofillTrainingUnitFromMetric_() {
   const cfg = getTrainingMetricConfig_(settings);
   const unit = cfg.byMetric[metric] ? cfg.byMetric[metric].unit : '';
   if (unit) profile.getRange('J10').setValue(unit);
+}
+
+function importDemoTestData() {
+  const ui = SpreadsheetApp.getUi();
+  const res = ui.alert(
+    'Import Demo/Test Data',
+    'This appends demo events to EventLog and rebuilds tables. Continue?',
+    ui.ButtonSet.YES_NO
+  );
+  if (res !== ui.Button.YES) return;
+
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const eventSheet = ss.getSheetByName('EventLog');
+  if (!eventSheet) return;
+
+  const base = new Date();
+  const customers = Array.from({ length: 20 }, (_, i) => ({
+    id: `C-${String(i + 1).padStart(3, '0')}`,
+    name: `Climber${String(i + 1).padStart(2, '0')}`,
+    height: String(160 + (i % 20)),
+    experience: `${i % 6}y`,
+    gender: i % 2 ? 'M' : 'F'
+  }));
+  const routes = Array.from({ length: 10 }, (_, i) => ({
+    id: `R-${String(i + 1).padStart(3, '0')}`,
+    name: `Route-${String(i + 1).padStart(2, '0')}`,
+    difficulty: (i % 10) + 1,
+    createdAt: new Date(base.getTime() - (10 - i) * 3600000).toISOString()
+  }));
+  const statuses = ['◎', '◯', '△', '✓'];
+  const metrics = ['VR', 'CP', 'LH', 'RH', 'HS'];
+  const units = { VR: 'reps', CP: 'sec', LH: 'kg', RH: 'kg', HS: 'sec' };
+
+  customers.forEach(c => appendStructuredEvent_('CUSTOMER_CREATED', 'customer', c.id, c, 'demo-seed'));
+  routes.forEach(r => appendStructuredEvent_('ROUTE_CREATED', 'route', r.id, r, 'demo-seed'));
+
+  for (let i = 0; i < 220; i++) {
+    const c = customers[i % customers.length];
+    const r = routes[(i * 3) % routes.length];
+    const ts = new Date(base.getTime() - (220 - i) * 8 * 60000).toISOString();
+    appendStructuredEvent_('CLIMB_LOGGED', 'climb', `${c.id}_${r.id}`, {
+      timestamp: ts,
+      customerId: c.id,
+      routeId: r.id,
+      status: statuses[i % statuses.length],
+      grade: r.difficulty,
+      height: c.height,
+      experience: c.experience,
+      gender: c.gender
+    }, 'demo-seed');
+  }
+
+  for (let i = 0; i < 80; i++) {
+    const c = customers[(i * 5) % customers.length];
+    const metric = metrics[i % metrics.length];
+    const ts = new Date(base.getTime() - (80 - i) * 15 * 60000).toISOString();
+    appendStructuredEvent_('TRAINING_LOGGED', 'training', c.id, {
+      timestamp: ts,
+      customerId: c.id,
+      customerName: c.name,
+      metric,
+      value: Math.round((5 + (i % 50) * 1.1) * 10) / 10,
+      unit: units[metric],
+      notes: 'demo fixture'
+    }, 'demo-seed');
+  }
+
+  rebuildTablesFromEventLog();
+  SpreadsheetApp.getActive().toast('Demo/test data imported.', 'Tracker Tools');
 }
 
 function applyEventEntryUiActions_(a1) {
