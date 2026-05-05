@@ -319,7 +319,7 @@ function handleEdit(e) {
   }
 
   if (sheetName === 'Rankings View') {
-    if (e.range.getA1Notation() === 'B1') refreshRankingsView_();
+    if (e.range.getA1Notation() === 'J1') refreshRankingsView_();
     return;
   }
 

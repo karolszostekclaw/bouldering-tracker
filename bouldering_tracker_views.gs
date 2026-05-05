@@ -32,14 +32,15 @@ function refreshRankingsView_() {
   const lastRow = customers.getLastRow();
 
   target.clear();
-  target.getRange('A1').setValue(ja ? '並び替え' : 'Sort By');
-  target.getRange('B1').setValue(target.getRange('B1').getValue() || 'Points');
-  target.getRange('C1:G1').clearContent();
+  const prevSort = target.getRange('J1').getValue();
+  target.getRange('I1').setValue(ja ? '並び替え' : 'Sort By');
+  target.getRange('J1').setValue(prevSort || 'Points');
+  target.getRange('A1:H2').clearContent();
 
   const sortValidation = SpreadsheetApp.newDataValidation()
     .requireValueInList(['Points', 'Completion Rate', 'Japanese Level', 'Name', 'V Scale Level'])
     .build();
-  target.getRange('B1').setDataValidation(sortValidation);
+  target.getRange('J1').setDataValidation(sortValidation);
 
   target.getRange('A3:G3').setValues([[
     ja ? '順位' : 'Rank',
@@ -54,7 +55,7 @@ function refreshRankingsView_() {
 
   if (lastRow < 2) return;
 
-  const sortBy = String(target.getRange('B1').getValue() || 'Points');
+  const sortBy = String(target.getRange('J1').getValue() || 'Points');
 
   const rows = customers.getRange(2, 1, lastRow - 1, 12).getValues()
     .filter(r => r[0] && r[1])
@@ -95,7 +96,15 @@ function refreshRankingsView_() {
 
   target.getRange(4, 1, out.length, out[0].length).setValues(out);
   target.getRange(4, 5, out.length, 1).setNumberFormat('0.00%');
-  target.autoResizeColumns(1, 7);
+  target.setColumnWidth(1, 70);
+  target.setColumnWidth(2, 110);
+  target.setColumnWidth(3, 140);
+  target.setColumnWidth(4, 90);
+  target.setColumnWidth(5, 110);
+  target.setColumnWidth(6, 120);
+  target.setColumnWidth(7, 130);
+  target.setColumnWidth(9, 100);
+  target.setColumnWidth(10, 140);
 }
 
 function vLevelSortKey_(value) {
