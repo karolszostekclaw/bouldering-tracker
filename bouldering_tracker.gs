@@ -237,11 +237,6 @@ function syncTracker() {
 
     if (finalCusts.length > 0) {
       sheet.getRange(5, 2, finalCusts.length, 2).setValues(finalCusts);
-      const cRates = finalCusts.map(c => {
-        const m = custSheet.getRange(2,1,Math.max(0,custSheet.getLastRow()-1),3).getValues().find(r => r[0]===c[0]);
-        return [m ? m[2] : ''];
-      });
-      sheet.getRange(5,4,finalCusts.length,1).setValues(cRates).setNumberFormat('0%');
     }
 
     if (finalRoutes.length > 0) {
@@ -305,6 +300,12 @@ function syncTracker() {
         return [attempts ? completes/attempts : 0];
       });
       sheet.getRange(4,5,1,finalRoutes.length).setValues([routeComp.map(x=>x[0])]).setNumberFormat('0%');
+
+      const customerComp = gridValues.map(row => {
+        const completes = row.filter(v => completeSet.has(v)).length;
+        return [row.length ? completes / row.length : 0];
+      });
+      sheet.getRange(5,4,finalCusts.length,1).setValues(customerComp).setNumberFormat('0%');
     }
 
     updateLogDropdowns();
