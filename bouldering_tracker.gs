@@ -1632,10 +1632,20 @@ function normalizeUiLanguageCell_() {
   const settings = sheetByKey_(ss, 'Settings');
   if (!settings) return;
 
-  const raw = settings.getRange('J2').getDisplayValue();
+  const cell = settings.getRange('J2');
+  const raw = cell.getDisplayValue();
   const normalized = String(raw || '').trim().toUpperCase();
   const finalValue = (normalized === 'JA' || normalized === 'EN') ? normalized : 'EN';
-  settings.getRange('J2').setValue(finalValue);
+
+  cell.clearDataValidations();
+  cell.setDataValidation(
+    SpreadsheetApp.newDataValidation()
+      .requireValueInList(['EN', 'JA'], true)
+      .setAllowInvalid(true)
+      .build()
+  );
+  cell.setValue(finalValue);
+  cell.clearNote();
 }
 
 function applySheetHeadersLanguage_() {
