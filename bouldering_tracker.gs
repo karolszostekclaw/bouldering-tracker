@@ -202,6 +202,7 @@ function syncTracker() {
     if (maxC >= 4) {
       sheet.getRange(1, 4, 3, maxC - 3).clearContent();
       sheet.getRange(1, 4, 1, maxC - 3).removeCheckboxes();
+      sheet.getRange(1, 4, 3, maxC - 3).clearDataValidations();
       sheet.getRange(4, 4, maxR - 3, maxC - 3).clearContent().clearDataValidations();
     }
 
@@ -927,13 +928,13 @@ function prepareEventEntryTab() {
 
   sheet.getRange('A1').setValue(ja ? '顧客イベント' : 'Customer Event');
   sheet.getRange('A2:B8').setValues([
-    ['Mode (CREATE/UPDATE)', 'CREATE'],
-    ['Customer ID', ''],
-    ['Name', ''],
-    ['Birthday', ''],
-    ['Height', ''],
-    ['Experience', ''],
-    ['Gender', '']
+    [ja ? 'モード (CREATE/UPDATE)' : 'Mode (CREATE/UPDATE)', 'CREATE'],
+    [ja ? '顧客ID' : 'Customer ID', ''],
+    [ja ? '名前' : 'Name', ''],
+    [ja ? '誕生日' : 'Birthday', ''],
+    [ja ? '身長' : 'Height', ''],
+    [ja ? '経験' : 'Experience', ''],
+    [ja ? '性別' : 'Gender', '']
   ]);
   sheet.getRange('A9').setValue(ja ? '顧客イベントを適用' : 'Apply Customer Event');
   sheet.getRange('B9').insertCheckboxes();
@@ -942,26 +943,26 @@ function prepareEventEntryTab() {
 
   sheet.getRange('D1').setValue(ja ? '課題イベント' : 'Route Event');
   sheet.getRange('D2:E7').setValues([
-    ['Route ID', ''],
-    ['Route Name', ''],
-    ['Difficulty Number', ''],
-    ['Link', ''],
-    ['Created At (optional ISO)', ''],
-    ['Apply Route Event', false]
+    [ja ? '課題ID' : 'Route ID', ''],
+    [ja ? '課題名' : 'Route Name', ''],
+    [ja ? '難易度値' : 'Difficulty Number', ''],
+    [ja ? 'リンク' : 'Link', ''],
+    [ja ? '作成日時 (任意 ISO)' : 'Created At (optional ISO)', ''],
+    [ja ? '課題イベントを適用' : 'Apply Route Event', false]
   ]);
   sheet.getRange('E7').insertCheckboxes();
 
   sheet.getRange('G1').setValue(ja ? '登攀イベント' : 'Climb Event');
   sheet.getRange('G2:H10').setValues([
-    ['Timestamp (optional ISO)', ''],
-    ['Customer ID', ''],
-    ['Route ID', ''],
-    ['Status', ''],
-    ['Grade', ''],
-    ['Height (optional)', ''],
-    ['Age (optional)', ''],
-    ['Experience (optional)', ''],
-    ['Gender (optional)', '']
+    [ja ? '日時 (任意 ISO)' : 'Timestamp (optional ISO)', ''],
+    [ja ? '顧客ID' : 'Customer ID', ''],
+    [ja ? '課題ID' : 'Route ID', ''],
+    [ja ? '状態' : 'Status', ''],
+    [ja ? 'グレード' : 'Grade', ''],
+    [ja ? '身長 (任意)' : 'Height (optional)', ''],
+    [ja ? '年齢 (任意)' : 'Age (optional)', ''],
+    [ja ? '経験 (任意)' : 'Experience (optional)', ''],
+    [ja ? '性別 (任意)' : 'Gender (optional)', '']
   ]);
   sheet.getRange('G11').setValue(ja ? '登攀イベントを適用' : 'Apply Climb Event');
   sheet.getRange('H11').insertCheckboxes();
@@ -976,13 +977,13 @@ function prepareEventEntryTab() {
 
   sheet.getRange('J1').setValue(ja ? 'トレーニングイベント' : 'Training Event');
   sheet.getRange('J2:K8').setValues([
-    ['Timestamp (optional ISO)', ''],
-    ['Customer ID', ''],
-    ['Customer Name (optional)', ''],
-    ['Metric', ''],
-    ['Value', ''],
-    ['Unit', ''],
-    ['Notes', '']
+    [ja ? '日時 (任意 ISO)' : 'Timestamp (optional ISO)', ''],
+    [ja ? '顧客ID' : 'Customer ID', ''],
+    [ja ? '顧客名 (任意)' : 'Customer Name (optional)', ''],
+    [ja ? '指標' : 'Metric', ''],
+    [ja ? '値' : 'Value', ''],
+    [ja ? '単位' : 'Unit', ''],
+    [ja ? 'メモ' : 'Notes', '']
   ]);
   sheet.getRange('J9').setValue(ja ? 'トレーニングイベントを適用' : 'Apply Training Event');
   sheet.getRange('K9').insertCheckboxes();
@@ -991,6 +992,9 @@ function prepareEventEntryTab() {
   sheet.getRange('K5').setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(metricList).build());
 
   sheet.getRange('A20:F20').setValues([['Apply?', 'Event Type', 'Entity Type', 'Entity ID', 'Payload JSON', 'Actor (optional)']]);
+  if (ja) {
+    sheet.getRange('A20:F20').setValues([['適用?', 'イベント種別', 'エンティティ種別', 'エンティティID', 'ペイロードJSON', '実行者 (任意)']]);
+  }
   if (sheet.getMaxRows() < 60) sheet.insertRowsAfter(sheet.getMaxRows(), 60 - sheet.getMaxRows());
   sheet.getRange(21, 1, 39, 1).insertCheckboxes();
   const dv = SpreadsheetApp.newDataValidation().requireValueInList(EVENT_ENTRY_TYPES).build();
@@ -1101,8 +1105,8 @@ function refreshProfileTabs_() {
   const customerId = String(customerProfile.getRange('A1').getValue() || '');
   customerProfile.getRange('A3:B12').clearContent();
   customerProfile.getRange('A3:A12').setValues([
-    ['Name'], ['Completion Rate'], ['Points'], ['Japanese Level'], ['V Scale Level'],
-    ['Age'], ['Height'], ['Experience'], ['Gender'], ['Recent Climbs (5)']
+    [ja ? '名前' : 'Name'], [ja ? '完登率' : 'Completion Rate'], [ja ? 'ポイント' : 'Points'], [ja ? '和グレード' : 'Japanese Level'], [ja ? 'Vグレード' : 'V Scale Level'],
+    [ja ? '年齢' : 'Age'], [ja ? '身長' : 'Height'], [ja ? '経験' : 'Experience'], [ja ? '性別' : 'Gender'], [ja ? '最近の登攀 (5件)' : 'Recent Climbs (5)']
   ]);
 
   if (customerId) {
@@ -1137,8 +1141,8 @@ function refreshProfileTabs_() {
   const routeId = String(routeProfile.getRange('A1').getValue() || '');
   routeProfile.getRange('A3:B11').clearContent();
   routeProfile.getRange('A3:A11').setValues([
-    ['Route Name'], ['Difficulty #'], ['Japanese Grade'], ['V Scale Grade'], ['Created At'],
-    ['Attempts'], ['Sends (◎/◯)'], ['Unique Climbers'], ['Recent Attempts (5)']
+    [ja ? '課題名' : 'Route Name'], [ja ? '難易度 #' : 'Difficulty #'], [ja ? '和グレード' : 'Japanese Grade'], [ja ? 'Vグレード' : 'V Scale Grade'], [ja ? '作成日時' : 'Created At'],
+    [ja ? '試行回数' : 'Attempts'], [ja ? '完登数 (◎/◯)' : 'Sends (◎/◯)'], [ja ? 'ユニーク人数' : 'Unique Climbers'], [ja ? '最近の試行 (5件)' : 'Recent Attempts (5)']
   ]);
 
   if (routeId) {
@@ -1584,5 +1588,27 @@ function applySheetHeadersLanguage_() {
       ja ? '点数' : 'Score',
       ja ? '完登?' : 'Complete?'
     ]]);
+    settings.getRange('F1:H1').setValues([[ja ? '指標' : 'Metric', ja ? 'デフォルト単位' : 'Default Unit', ja ? '大きいほど良い' : 'Higher Is Better']]);
+    settings.getRange('J1').setValue(ja ? 'UI言語' : 'UI Language');
+  }
+
+  const logbook = ss.getSheetByName('Logbook');
+  if (logbook) {
+    logbook.getRange('A1:I1').setValues([[ja ? '日時' : 'Timestamp', ja ? '顧客ID' : 'Customer ID', ja ? '課題ID' : 'Route ID', ja ? '状態' : 'Status', ja ? 'グレード' : 'Grade', ja ? '身長' : 'Height', ja ? '年齢' : 'Age', ja ? '経験' : 'Experience', ja ? '性別' : 'Gender']]);
+  }
+
+  const tlog = ss.getSheetByName('TrainingLog');
+  if (tlog) {
+    tlog.getRange('A1:G1').setValues([[ja ? '日時' : 'Timestamp', ja ? '顧客ID' : 'Customer ID', ja ? '顧客名' : 'Customer Name', ja ? '指標' : 'Metric', ja ? '値' : 'Value', ja ? '単位' : 'Unit', ja ? 'メモ' : 'Notes']]);
+  }
+
+  const elog = ss.getSheetByName('EventLog');
+  if (elog) {
+    elog.getRange('A1:G1').setValues([[ja ? '日時' : 'Timestamp', ja ? 'イベント種別' : 'Event Type', ja ? 'エンティティ種別' : 'Entity Type', ja ? 'エンティティID' : 'Entity ID', ja ? 'ペイロードJSON' : 'Payload JSON', ja ? '実行者' : 'Actor', ja ? 'スキーマ版' : 'Schema Version']]);
+  }
+
+  const gc = ss.getSheetByName(GRADE_CONVERSION_SHEET);
+  if (gc) {
+    gc.getRange('A1:C1').setValues([[ja ? '難易度値' : 'Difficulty Number', ja ? '和グレード' : 'Japanese Grade', ja ? 'Vグレード' : 'V Scale Grade']]);
   }
 }
