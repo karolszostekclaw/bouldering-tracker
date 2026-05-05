@@ -246,7 +246,7 @@ function syncTracker() {
 
     sheet.getRange('D4').setValue(getUiLanguage_()==='JA' ? '完登率' : 'Comp %');
     sheet.setFrozenRows(4);
-    sheet.setFrozenColumns(3);
+    sheet.setFrozenColumns(4);
 
     // --- 4. PROCESS LOGBOOK DATA (Filtering) ---
     const rawDate = sheet.getRange('B1').getValue();
