@@ -2,6 +2,7 @@ const TRAINING_METRICS = ['VR', 'CP', 'LH', 'RH', 'HS'];
 const REQUIRED_SHEETS = ['Data', 'Customers', 'Routes', 'Settings', 'Logbook', 'Customer Profile', 'Route Profile'];
 const EVENT_LOG_SCHEMA_VERSION = 1;
 const EVENT_ENTRY_TYPES = ['CUSTOMER_CREATED', 'CUSTOMER_UPDATED', 'ROUTE_CREATED', 'CLIMB_LOGGED', 'TRAINING_LOGGED'];
+const GRADE_CONVERSION_SHEET = 'GradeConversion';
 
 function onOpen() {
   SpreadsheetApp.getUi().createMenu('🧗‍♂️ Tracker Tools')
@@ -35,6 +36,7 @@ function setupSpreadsheet() {
   ensureSheetWithHeaders_(ss, 'Route Profile', ['Route ID']);
 
   seedDefaultSettings_();
+  ensureGradeConversionSheet_(ss);
   prepareEventEntryTab();
   installTriggers();
   syncTracker();
@@ -85,6 +87,8 @@ function syncTracker() {
     // --- 1. GENERATE MISSING IDs IN DATABASES ---
     generateMissingIds_(custSheet, 'C-');
     generateMissingIds_(routeSheet, 'R-');
+    ensureGradeConversionSheet_(ss);
+    refreshRouteGradeFormulas_(routeSheet);
 
     // --- 2. GLOBAL FORMULA REFRESH (Customers Sheet) ---
     const custLastRow = custSheet.getLastRow();
@@ -107,6 +111,7 @@ function syncTracker() {
       custSheet.getRange(2, 5, numRows, 1).setFormulas(formulasE);
       custSheet.getRange(2, 7, numRows, 1).setFormulas(formulasG);
     }
+    refreshCustomerGradeDisplayFormulas_(custSheet);
 
     // --- 3. REFRESH DATA TAB HEADERS ---
     const finalCusts = getNonEmptyRows_(custSheet, 2, 1, 2);
@@ -198,6 +203,11 @@ function handleEdit(e) {
   if (!e || !e.range || e.value === undefined) return;
 
   const sheet = e.range.getSheet();
+  if (sheet.getName() === 'Event Entry') {
+    if (e.value === 'TRUE') applyEventEntryUiActions_(e.range.getA1Notation());
+    return;
+  }
+
   if (sheet.getName() !== 'Data') return;
 
   const row = e.range.getRow();
@@ -719,16 +729,17 @@ function rebuildTablesFromEventLog() {
     }
 
     if (eventType === 'CLIMB_LOGGED' && payload.customerId && payload.routeId) {
+      const c = customers.find(x => x[0] === payload.customerId);
       climbs.push([
         payload.timestamp ? new Date(payload.timestamp) : new Date(),
         payload.customerId,
         payload.routeId,
         payload.status || '',
         payload.grade || '',
-        payload.height || '',
-        payload.age || '',
-        payload.experience || '',
-        payload.gender || ''
+        payload.height || (c ? c[7] : ''),
+        payload.age || (c ? c[6] : ''),
+        payload.experience || (c ? c[8] : ''),
+        payload.gender || (c ? c[9] : '')
       ]);
     }
 
@@ -773,26 +784,67 @@ function safeParseJson_(value) {
 function prepareEventEntryTab() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sheet = ss.getSheetByName('Event Entry') || ss.insertSheet('Event Entry');
+  sheet.clear();
+  sheet.setFrozenRows(20);
 
-  sheet.getRange(1, 1, 1, 6).setValues([['Apply?', 'Event Type', 'Entity Type', 'Entity ID', 'Payload JSON', 'Actor (optional)']]);
-  sheet.setFrozenRows(1);
+  sheet.getRange('A1').setValue('Customer Event');
+  sheet.getRange('A2:B8').setValues([
+    ['Mode (CREATE/UPDATE)', 'CREATE'],
+    ['Customer ID', ''],
+    ['Name', ''],
+    ['Birthday', ''],
+    ['Height', ''],
+    ['Experience', ''],
+    ['Gender', '']
+  ]);
+  sheet.getRange('A9').setValue('Apply Customer Event');
+  sheet.getRange('B9').insertCheckboxes();
 
-  const maxRows = Math.max(sheet.getMaxRows(), 30);
-  if (sheet.getMaxRows() < 30) sheet.insertRowsAfter(sheet.getMaxRows(), 30 - sheet.getMaxRows());
-  sheet.getRange(2, 1, maxRows - 1, 1).insertCheckboxes();
+  sheet.getRange('D1').setValue('Route Event');
+  sheet.getRange('D2:E7').setValues([
+    ['Route ID', ''],
+    ['Route Name', ''],
+    ['Difficulty Number', ''],
+    ['Link', ''],
+    ['Created At (optional ISO)', ''],
+    ['Apply Route Event', false]
+  ]);
+  sheet.getRange('E7').insertCheckboxes();
 
+  sheet.getRange('G1').setValue('Climb Event');
+  sheet.getRange('G2:H10').setValues([
+    ['Timestamp (optional ISO)', ''],
+    ['Customer ID', ''],
+    ['Route ID', ''],
+    ['Status', ''],
+    ['Grade', ''],
+    ['Height (optional)', ''],
+    ['Age (optional)', ''],
+    ['Experience (optional)', ''],
+    ['Gender (optional)', '']
+  ]);
+  sheet.getRange('G11').setValue('Apply Climb Event');
+  sheet.getRange('H11').insertCheckboxes();
+
+  sheet.getRange('J1').setValue('Training Event');
+  sheet.getRange('J2:K8').setValues([
+    ['Timestamp (optional ISO)', ''],
+    ['Customer ID', ''],
+    ['Customer Name (optional)', ''],
+    ['Metric', ''],
+    ['Value', ''],
+    ['Unit', ''],
+    ['Notes', '']
+  ]);
+  sheet.getRange('J9').setValue('Apply Training Event');
+  sheet.getRange('K9').insertCheckboxes();
+
+  sheet.getRange('A20:F20').setValues([['Apply?', 'Event Type', 'Entity Type', 'Entity ID', 'Payload JSON', 'Actor (optional)']]);
+  if (sheet.getMaxRows() < 60) sheet.insertRowsAfter(sheet.getMaxRows(), 60 - sheet.getMaxRows());
+  sheet.getRange(21, 1, 39, 1).insertCheckboxes();
   const dv = SpreadsheetApp.newDataValidation().requireValueInList(EVENT_ENTRY_TYPES).build();
-  sheet.getRange(2, 2, maxRows - 1, 1).setDataValidation(dv);
-
-  const hints = [
-    ['', 'CUSTOMER_CREATED', 'customer', 'C-NEW001', '{"id":"C-NEW001","name":"Yuki","height":"168","experience":"new","gender":"F"}', ''],
-    ['', 'CUSTOMER_UPDATED', 'customer', 'C-NEW001', '{"id":"C-NEW001","experience":"6m"}', ''],
-    ['', 'ROUTE_CREATED', 'route', 'R-NEW001', '{"id":"R-NEW001","name":"Orange Dyno","difficulty":4,"createdAt":"2026-05-05T08:00:00Z"}', ''],
-    ['', 'CLIMB_LOGGED', 'climb', 'C-NEW001_R-NEW001', '{"timestamp":"2026-05-05T08:10:00Z","customerId":"C-NEW001","routeId":"R-NEW001","status":"◯","grade":4}', ''],
-    ['', 'TRAINING_LOGGED', 'training', 'C-NEW001', '{"timestamp":"2026-05-05T08:30:00Z","customerId":"C-NEW001","customerName":"Yuki","metric":"VR","value":10,"unit":"reps"}', '']
-  ];
-  sheet.getRange(2, 1, hints.length, hints[0].length).setValues(hints);
-  sheet.autoResizeColumns(1, 6);
+  sheet.getRange(21, 2, 39, 1).setDataValidation(dv);
+  sheet.autoResizeColumns(1, 11);
   SpreadsheetApp.getActive().toast('Event Entry tab prepared.', 'Tracker Tools');
 }
 
@@ -910,11 +962,12 @@ function refreshProfileTabs_() {
       customerProfile.getRange('B11').setValue(c[9] || '');
     }
 
+    const tz = Session.getScriptTimeZone();
     const logs = logSheet.getRange(2, 1, Math.max(0, logSheet.getLastRow() - 1), 4).getValues()
       .filter(r => String(r[1]) === customerId)
       .sort((a, b) => new Date(b[0]).getTime() - new Date(a[0]).getTime())
       .slice(0, 5)
-      .map(r => `${r[0]} | ${r[2]} | ${r[3]}`);
+      .map(r => `${r[0] instanceof Date ? Utilities.formatDate(r[0], tz, 'yyyy-MM-dd HH:mm') : r[0]} | ${r[2]} | ${r[3]}`);
     customerProfile.getRange('B12').setValue(logs.join('\n'));
   }
 
@@ -937,6 +990,7 @@ function refreshProfileTabs_() {
       if (r[4] instanceof Date) routeProfile.getRange('B7').setNumberFormat('yyyy-mm-dd hh:mm:ss');
     }
 
+    const tz = Session.getScriptTimeZone();
     const routeLogs = logSheet.getRange(2, 1, Math.max(0, logSheet.getLastRow() - 1), 4).getValues()
       .filter(x => String(x[2]) === routeId);
     const sends = routeLogs.filter(x => x[3] === '◎' || x[3] === '◯').length;
@@ -944,7 +998,7 @@ function refreshProfileTabs_() {
     const recent = routeLogs
       .sort((a, b) => new Date(b[0]).getTime() - new Date(a[0]).getTime())
       .slice(0, 5)
-      .map(x => `${x[0]} | ${x[1]} | ${x[3]}`)
+      .map(x => `${x[0] instanceof Date ? Utilities.formatDate(x[0], tz, 'yyyy-MM-dd HH:mm') : x[0]} | ${x[1]} | ${x[3]}`)
       .join('\n');
 
     routeProfile.getRange('B8').setValue(routeLogs.length);
@@ -952,4 +1006,138 @@ function refreshProfileTabs_() {
     routeProfile.getRange('B10').setValue(unique);
     routeProfile.getRange('B11').setValue(recent);
   }
+}
+
+function applyEventEntryUiActions_(a1) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName('Event Entry');
+  if (!sheet) return;
+
+  if (a1 === 'B9') {
+    const mode = String(sheet.getRange('B2').getValue() || 'CREATE').toUpperCase();
+    const payload = {
+      id: String(sheet.getRange('B3').getValue() || ''),
+      name: String(sheet.getRange('B4').getValue() || ''),
+      birthday: String(sheet.getRange('B5').getValue() || ''),
+      height: String(sheet.getRange('B6').getValue() || ''),
+      experience: String(sheet.getRange('B7').getValue() || ''),
+      gender: String(sheet.getRange('B8').getValue() || '')
+    };
+    if (!payload.id || (mode === 'CREATE' && !payload.name)) return;
+    appendStructuredEvent_(mode === 'UPDATE' ? 'CUSTOMER_UPDATED' : 'CUSTOMER_CREATED', 'customer', payload.id, payload);
+    sheet.getRange('B2:B8').clearContent();
+    sheet.getRange('B9').setValue(false);
+    rebuildTablesFromEventLog();
+    return;
+  }
+
+  if (a1 === 'E7') {
+    const payload = {
+      id: String(sheet.getRange('E2').getValue() || ''),
+      name: String(sheet.getRange('E3').getValue() || ''),
+      difficulty: Number(sheet.getRange('E4').getValue() || 0),
+      link: String(sheet.getRange('E5').getValue() || ''),
+      createdAt: String(sheet.getRange('E6').getValue() || '') || new Date().toISOString()
+    };
+    if (!payload.id || !payload.name) return;
+    appendStructuredEvent_('ROUTE_CREATED', 'route', payload.id, payload);
+    sheet.getRange('E2:E6').clearContent();
+    sheet.getRange('E7').setValue(false);
+    rebuildTablesFromEventLog();
+    return;
+  }
+
+  if (a1 === 'H11') {
+    const payload = {
+      timestamp: String(sheet.getRange('H2').getValue() || '') || new Date().toISOString(),
+      customerId: String(sheet.getRange('H3').getValue() || ''),
+      routeId: String(sheet.getRange('H4').getValue() || ''),
+      status: String(sheet.getRange('H5').getValue() || ''),
+      grade: Number(sheet.getRange('H6').getValue() || 0),
+      height: String(sheet.getRange('H7').getValue() || ''),
+      age: String(sheet.getRange('H8').getValue() || ''),
+      experience: String(sheet.getRange('H9').getValue() || ''),
+      gender: String(sheet.getRange('H10').getValue() || '')
+    };
+    if (!payload.customerId || !payload.routeId || !payload.status) return;
+    appendStructuredEvent_('CLIMB_LOGGED', 'climb', `${payload.customerId}_${payload.routeId}`, payload);
+    sheet.getRange('H2:H10').clearContent();
+    sheet.getRange('H11').setValue(false);
+    rebuildTablesFromEventLog();
+    return;
+  }
+
+  if (a1 === 'K9') {
+    const payload = {
+      timestamp: String(sheet.getRange('K2').getValue() || '') || new Date().toISOString(),
+      customerId: String(sheet.getRange('K3').getValue() || ''),
+      customerName: String(sheet.getRange('K4').getValue() || ''),
+      metric: String(sheet.getRange('K5').getValue() || ''),
+      value: sheet.getRange('K6').getValue(),
+      unit: String(sheet.getRange('K7').getValue() || ''),
+      notes: String(sheet.getRange('K8').getValue() || '')
+    };
+    if (!payload.customerId || !payload.metric) return;
+    appendStructuredEvent_('TRAINING_LOGGED', 'training', payload.customerId, payload);
+    sheet.getRange('K2:K8').clearContent();
+    sheet.getRange('K9').setValue(false);
+    rebuildTablesFromEventLog();
+  }
+}
+
+function ensureGradeConversionSheet_(ss) {
+  let sheet = ss.getSheetByName(GRADE_CONVERSION_SHEET);
+  if (!sheet) sheet = ss.insertSheet(GRADE_CONVERSION_SHEET);
+
+  const headers = ['Difficulty Number', 'Japanese Grade', 'V Scale Grade'];
+  const rows = [
+    [0, '10級', 'VB'], [1, '9級', 'VB'], [2, '8級', 'V0-'], [3, '7級', 'V0'],
+    [4, '6級', 'V0-V1'], [5, '5級', 'V1'], [6, '4級', 'V2'], [7, '3級', 'V3-V4'],
+    [8, '2級', 'V4-V5'], [9, '1級', 'V5-V6'], [10, '初段', 'V7'], [11, '2段', 'V8'],
+    [12, '3段', 'V9'], [13, '4段', 'V10'], [14, '5段', 'V11'], [15, '6段', 'V12']
+  ];
+
+  sheet.getRange(1, 1, 1, 3).setValues([headers]);
+  if (sheet.getLastRow() < 2) sheet.getRange(2, 1, rows.length, 3).setValues(rows);
+  sheet.setFrozenRows(1);
+}
+
+function refreshRouteGradeFormulas_(routeSheet) {
+  const lastRow = routeSheet.getLastRow();
+  if (lastRow < 2) return;
+  const numRows = lastRow - 1;
+
+  routeSheet.getRange('F1:G1').setValues([['Japanese Grade', 'V Scale Grade']]);
+  const jp = [];
+  const v = [];
+  for (let row = 2; row <= lastRow; row++) {
+    jp.push([
+      `=IF($C${row}="", "", IFERROR(XLOOKUP(FLOOR($C${row}), GradeConversion!$A:$A, GradeConversion!$B:$B, "", -1) & IF(MOD($C${row},1)=0, "", IF(MOD($C${row},1)<0.33, "-", IF(MOD($C${row},1)<0.67, "", "+"))), ""))`
+    ]);
+    v.push([
+      `=IF($C${row}="", "", IFERROR(XLOOKUP(FLOOR($C${row}), GradeConversion!$A:$A, GradeConversion!$C:$C, "", -1), ""))`
+    ]);
+  }
+  routeSheet.getRange(2, 6, numRows, 1).setFormulas(jp);
+  routeSheet.getRange(2, 7, numRows, 1).setFormulas(v);
+}
+
+function refreshCustomerGradeDisplayFormulas_(custSheet) {
+  const lastRow = custSheet.getLastRow();
+  if (lastRow < 2) return;
+  const numRows = lastRow - 1;
+
+  custSheet.getRange('K1:L1').setValues([['Japanese Level', 'V Scale Level']]);
+  const jp = [];
+  const v = [];
+  for (let row = 2; row <= lastRow; row++) {
+    jp.push([
+      `=IF($E${row}="", "", IFERROR(XLOOKUP(FLOOR($E${row}), GradeConversion!$A:$A, GradeConversion!$B:$B, "", -1) & IF(MOD($E${row},1)=0, "", IF(MOD($E${row},1)<0.33, "-", IF(MOD($E${row},1)<0.67, "", "+"))), ""))`
+    ]);
+    v.push([
+      `=IF($E${row}="", "", IFERROR(XLOOKUP(FLOOR($E${row}), GradeConversion!$A:$A, GradeConversion!$C:$C, "", -1), ""))`
+    ]);
+  }
+  custSheet.getRange(2, 11, numRows, 1).setFormulas(jp);
+  custSheet.getRange(2, 12, numRows, 1).setFormulas(v);
 }

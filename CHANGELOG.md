@@ -25,6 +25,10 @@ All notable changes to this tracker should be documented here.
 - Added Event Entry workflow (`Prepare Event Entry Tab`, `Apply Event Entry Rows`) for manual event creation.
 - Added migration utility (`Migrate Existing Tables to EventLog`) for onboarding existing spreadsheets.
 - Added support for `CUSTOMER_UPDATED` events during EventLog rebuild.
+- Restored grade conversion pipeline (`GradeConversion`, route/customer JP+V formulas).
+- EventLog rebuild now backfills missing climb snapshot fields from customer records.
+- Event Entry redesigned as guided top-of-sheet UI with per-type one-click checkboxes.
+- Profile recent logs now use human-readable date formatting.
 - `.claspignore` + `appsscript.json` to prevent duplicate file pushes and stabilize deploys.
 - Setup/update helper scripts for macOS + Google Sheets deployment (`setup.sh`, `update.sh`).
 - Manual updates for first-time setup + public views in EN/JA guides.
