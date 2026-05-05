@@ -67,15 +67,15 @@ function refreshRankingsView_() {
       name: r[1],
       completion: Number(r[2]) || 0,
       points: Number(r[3]) || 0,
-      jlevel: r[10] || '',
+      jlevel: r[10] || (String(r[11] || r[4] || '') === 'No Sends' ? 'No Sends' : ''),
       vlevel: r[11] || r[4] || ''
     }));
 
   const sorter = {
     'Points': (a, b) => (b.points - a.points),
     'Completion Rate': (a, b) => (b.completion - a.completion),
-    'Japanese Level': (a, b) => String(b.jlevel).localeCompare(String(a.jlevel), undefined, { numeric: true }),
-    'V Scale Level': (a, b) => String(b.vlevel).localeCompare(String(a.vlevel), undefined, { numeric: true }),
+    'Japanese Level': (a, b) => (levelSortKey_(b.jlevel, b.vlevel) - levelSortKey_(a.jlevel, a.vlevel)),
+    'V Scale Level': (a, b) => (vLevelSortKey_(b.vlevel) - vLevelSortKey_(a.vlevel)),
     'Name': (a, b) => String(a.name).localeCompare(String(b.name))
   };
 
@@ -100,6 +100,27 @@ function refreshRankingsView_() {
   target.getRange(4, 1, out.length, out[0].length).setValues(out);
   target.getRange(4, 5, out.length, 1).setNumberFormat('0.00%');
   target.autoResizeColumns(1, 7);
+}
+
+function vLevelSortKey_(value) {
+  const text = String(value || '');
+  if (!text || text === 'No Sends') return -1;
+  const m = text.match(/V(\d+)/i);
+  return m ? Number(m[1]) : -1;
+}
+
+function levelSortKey_(jLevel, vLevel) {
+  const text = String(jLevel || '');
+  if (!text || text === 'No Sends') return vLevelSortKey_(vLevel);
+
+  const kyuu = text.match(/(\d+)級/);
+  if (kyuu) return 10 - Number(kyuu[1]);
+
+  if (text.includes('初段')) return 10;
+  const dan = text.match(/(\d+)段/);
+  if (dan) return 10 + Number(dan[1]);
+
+  return vLevelSortKey_(vLevel);
 }
 
 function refreshNewRoutesView_(daysWindow) {
