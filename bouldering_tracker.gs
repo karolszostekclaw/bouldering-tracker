@@ -1018,7 +1018,9 @@ function refreshProfileTabs_() {
   ]);
 
   if (customerId) {
-    const rows = custSheet.getRange(2, 1, Math.max(0, custSheet.getLastRow() - 1), 12).getValues();
+    const rows = custSheet.getLastRow() >= 2
+      ? custSheet.getRange(2, 1, custSheet.getLastRow() - 1, 12).getValues()
+      : [];
     const c = rows.find(r => String(r[0]) === customerId);
     if (c) {
       customerProfile.getRange('B3').setValue(c[1] || '');
@@ -1033,7 +1035,10 @@ function refreshProfileTabs_() {
     }
 
     const tz = Session.getScriptTimeZone();
-    const logs = logSheet.getRange(2, 1, Math.max(0, logSheet.getLastRow() - 1), 4).getValues()
+    const baseLogs = logSheet.getLastRow() >= 2
+      ? logSheet.getRange(2, 1, logSheet.getLastRow() - 1, 4).getValues()
+      : [];
+    const logs = baseLogs
       .filter(r => String(r[1]) === customerId)
       .sort((a, b) => new Date(b[0]).getTime() - new Date(a[0]).getTime())
       .slice(0, 5)
@@ -1049,7 +1054,9 @@ function refreshProfileTabs_() {
   ]);
 
   if (routeId) {
-    const rows = routeSheet.getRange(2, 1, Math.max(0, routeSheet.getLastRow() - 1), 7).getValues();
+    const rows = routeSheet.getLastRow() >= 2
+      ? routeSheet.getRange(2, 1, routeSheet.getLastRow() - 1, 7).getValues()
+      : [];
     const r = rows.find(x => String(x[0]) === routeId);
     if (r) {
       routeProfile.getRange('B3').setValue(r[1] || '');
@@ -1061,7 +1068,10 @@ function refreshProfileTabs_() {
     }
 
     const tz = Session.getScriptTimeZone();
-    const routeLogs = logSheet.getRange(2, 1, Math.max(0, logSheet.getLastRow() - 1), 4).getValues()
+    const routeLogsBase = logSheet.getLastRow() >= 2
+      ? logSheet.getRange(2, 1, logSheet.getLastRow() - 1, 4).getValues()
+      : [];
+    const routeLogs = routeLogsBase
       .filter(x => String(x[2]) === routeId);
     const sends = routeLogs.filter(x => x[3] === '◎' || x[3] === '◯').length;
     const unique = new Set(routeLogs.map(x => x[1])).size;
