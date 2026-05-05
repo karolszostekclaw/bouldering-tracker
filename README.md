@@ -119,6 +119,8 @@ See `SUPPORT.md` for:
 - screenshot evidence checklist,
 - common issue fixes.
 
+Developer consistency rules: `DEVELOPMENT_GUARDRAILS.md`.
+
 ## Process rule
 Any script change must include:
 1. changelog update,

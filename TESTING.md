@@ -24,6 +24,20 @@ Run in a test copy before production:
 - Dropdowns for customer/route/status still valid.
 - Trigger not duplicated (only one `handleEdit` installable trigger).
 
+### Data layout invariants (must always hold)
+- Row 4 is **header-only** (`A:D`) and must not contain customer entries.
+- Customer rows start at **row 5**.
+- Column `D` is reserved for customer completion %.
+- Route headers/checkboxes start at **column E**.
+- Freeze pane must be **row 4 + column D**.
+
+### Mirror-change rule
+When changing grid anchors (row/column offsets), update and verify **both sides**:
+1. cleanup/clear ranges, and
+2. write/fill ranges.
+
+No push until both are validated in-sheet.
+
 ## 4) Documentation gate (must pass)
 For any script change:
 - Update `bouldering_tracker_user_guide.md` (EN)
