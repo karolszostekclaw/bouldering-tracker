@@ -224,9 +224,9 @@ function syncTracker() {
     }
 
     if (maxC >= 4) {
-      sheet.getRange(1, 5, 4, maxC - 4).clearContent();
-      sheet.getRange(1, 5, 1, maxC - 4).removeCheckboxes();
-      sheet.getRange(1, 5, 4, maxC - 4).clearDataValidations();
+      sheet.getRange(1, 4, 3, maxC - 3).clearContent();
+      sheet.getRange(1, 4, 1, maxC - 3).removeCheckboxes();
+      sheet.getRange(1, 4, 3, maxC - 3).clearDataValidations();
       if (maxR >= 5) sheet.getRange(5, 5, maxR - 4, maxC - 4).clearContent().clearDataValidations();
     }
 
