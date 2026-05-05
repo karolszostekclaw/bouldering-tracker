@@ -47,6 +47,7 @@ Apps Script を貼り付け・更新した後：
 主な項目：
 
 - **B1 / C1** — 開始日・開始時間フィルター。ここを編集するとダッシュボードが更新されます。
+- ペインは 3 行目 / C 列まで固定されます。
 - **B2** — 登った記録を追加する顧客を選択します。
 - **B3** — 登った課題を選択します。
 - **C3** — ステータスを選択します。
@@ -114,8 +115,8 @@ Apps Script を貼り付け・更新した後：
 
 顧客向けのランキング表示タブです。
 
-- **Points（ポイント）** の降順で並びます。
-- 同点時は完登率、その次に名前で並びます。
+- **Japanese Level** と **V Scale Level** の両方を表示します。
+- シート上の `Sort By` で並び替え項目を選べます。
 - `Customers` のデータから作成されます。
 
 ### New Routes
@@ -219,6 +220,12 @@ Apps Script を貼り付け・更新した後：
 **Tracker Tools → Refresh Rankings & New Routes Views**
 
 このメニューがない場合は、Apps Script プロジェクトに `bouldering_tracker_views.gs` を追加し、`onOpen()` にメニュー項目を追加してください。
+
+### 手動イベント入力と移行
+
+- **Prepare Event Entry Tab**: 1行=1イベントの入力タブを作成します。
+- **Apply Event Entry Rows**: チェック済み行を `EventLog` に追加し、テーブルを再構築します。
+- **Migrate Existing Tables to EventLog**: 既存の `Customers/Routes/Logbook/TrainingLog` を `EventLog` に移行します。
 
 ---
 

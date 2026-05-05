@@ -47,6 +47,7 @@ Main dashboard.
 Important areas:
 
 - **B1 / C1** — optional start date/time filter. Editing these refreshes the dashboard.
+- Pane is frozen at row 3 / column C for stable navigation.
 - **B2** — select a customer for quick climb logging.
 - **B3** — select a route for quick climb logging.
 - **C3** — select climb status.
@@ -114,8 +115,8 @@ Shows one route’s details and related climber data.
 
 Customer-facing ranking tab.
 
-- Sorted by **Points** (descending).
-- Tie-breakers: completion rate, then name.
+- Includes both **Japanese Level** and **V Scale Level**.
+- Sort field is selectable in the sheet (`Sort By`).
 - Built from `Customers` data.
 
 ### New Routes
@@ -219,6 +220,12 @@ Run:
 **Tracker Tools → Refresh Rankings & New Routes Views**
 
 If this menu item is missing, include `bouldering_tracker_views.gs` in your Apps Script project and add the menu item in `onOpen()`.
+
+### Manual event entry and migration
+
+- **Prepare Event Entry Tab**: creates a guided tab where each row is one event.
+- **Apply Event Entry Rows**: appends checked rows into `EventLog` and rebuilds tables.
+- **Migrate Existing Tables to EventLog**: imports current `Customers/Routes/Logbook/TrainingLog` into `EventLog` for legacy spreadsheet onboarding.
 
 ---
 

@@ -74,6 +74,9 @@ Use `Setup / Repair Spreadsheet` + `Sync IDs & Dashboards` to rebuild generated 
 ## EventLog-first rebuild
 - Event schema columns: `Timestamp, Event Type, Entity Type, Entity ID, Payload JSON, Actor, Schema Version`.
 - Use menu: **Tracker Tools → Rebuild Tables from EventLog** to regenerate `Customers`, `Routes`, `Logbook`, `TrainingLog`.
+- Use menu: **Prepare Event Entry Tab** to generate an input sheet for manual events.
+- Use menu: **Apply Event Entry Rows** to append checked rows into EventLog and rebuild tables.
+- Use menu: **Migrate Existing Tables to EventLog** when onboarding an existing spreadsheet.
 
 ## Test fixture
 - Seed file: `testdata/events_fixture.csv`

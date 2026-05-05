@@ -1,6 +1,7 @@
 const TRAINING_METRICS = ['VR', 'CP', 'LH', 'RH', 'HS'];
 const REQUIRED_SHEETS = ['Data', 'Customers', 'Routes', 'Settings', 'Logbook', 'Customer Profile', 'Route Profile'];
 const EVENT_LOG_SCHEMA_VERSION = 1;
+const EVENT_ENTRY_TYPES = ['CUSTOMER_CREATED', 'CUSTOMER_UPDATED', 'ROUTE_CREATED', 'CLIMB_LOGGED', 'TRAINING_LOGGED'];
 
 function onOpen() {
   SpreadsheetApp.getUi().createMenu('🧗‍♂️ Tracker Tools')
@@ -9,6 +10,9 @@ function onOpen() {
     .addItem('Install / Repair Edit Trigger', 'installTriggers')
     .addItem('Refresh Rankings & New Routes Views', 'refreshPublicViews')
     .addItem('Rebuild Tables from EventLog', 'rebuildTablesFromEventLog')
+    .addItem('Prepare Event Entry Tab', 'prepareEventEntryTab')
+    .addItem('Apply Event Entry Rows', 'applyEventEntryRows')
+    .addItem('Migrate Existing Tables to EventLog', 'migrateExistingTablesToEventLog')
     .addSeparator()
     .addItem('Log Climb from Data Sheet', 'logFromDataSheet')
     .addItem('Log Climb from Customer Profile', 'logClimbFromProfile')
@@ -26,13 +30,16 @@ function setupSpreadsheet() {
   ensureSheetWithHeaders_(ss, 'Logbook', ['Timestamp', 'Customer ID', 'Route ID', 'Status', 'Grade', 'Height', 'Age', 'Experience', 'Gender']);
   ensureSheetWithHeaders_(ss, 'TrainingLog', ['Timestamp', 'Customer ID', 'Customer Name', 'Metric', 'Value', 'Unit', 'Notes']);
   ensureSheetWithHeaders_(ss, 'EventLog', ['Timestamp', 'Event Type', 'Entity Type', 'Entity ID', 'Payload JSON', 'Actor', 'Schema Version']);
+  ensureSheetWithHeaders_(ss, 'Event Entry', ['Apply?', 'Event Type', 'Entity Type', 'Entity ID', 'Payload JSON', 'Actor (optional)']);
   ensureSheetWithHeaders_(ss, 'Customer Profile', ['Customer ID']);
   ensureSheetWithHeaders_(ss, 'Route Profile', ['Route ID']);
 
   seedDefaultSettings_();
+  prepareEventEntryTab();
   installTriggers();
   syncTracker();
   refreshPublicViews();
+  refreshProfileTabs_();
   ss.toast('Spreadsheet setup complete.', 'Tracker Tools');
 }
 
@@ -128,6 +135,9 @@ function syncTracker() {
       sheet.getRange(3, 4, 1, finalRoutes.length).setValues([finalRoutes.map(r => r[1])]);
     }
 
+    sheet.setFrozenRows(3);
+    sheet.setFrozenColumns(3);
+
     // --- 4. PROCESS LOGBOOK DATA (Filtering) ---
     const rawDate = sheet.getRange('B1').getValue();
     const rawTime = sheet.getRange('C1').getValue();
@@ -173,6 +183,7 @@ function syncTracker() {
     }
 
     updateLogDropdowns();
+    refreshProfileTabs_();
     ss.toast('Database Synced & Formulae Refreshed!', 'Success');
   } finally {
     lock.releaseLock();
@@ -214,6 +225,7 @@ function handleEdit(e) {
     }
 
     profileSheet.getRange('A1').setValue(customerId);
+    refreshProfileTabs_();
     SpreadsheetApp.flush();
     profileSheet.activate();
     profileSheet.getRange('A1').activate();
@@ -233,6 +245,7 @@ function handleEdit(e) {
     }
 
     routeProfileSheet.getRange('A1').setValue(routeId);
+    refreshProfileTabs_();
     SpreadsheetApp.flush();
     routeProfileSheet.activate();
     routeProfileSheet.getRange('A1').activate();
@@ -682,6 +695,17 @@ function rebuildTablesFromEventLog() {
       ]);
     }
 
+    if (eventType === 'CUSTOMER_UPDATED' && payload.id) {
+      const idx = customers.findIndex(c => c[0] === payload.id);
+      if (idx >= 0) {
+        if (payload.name !== undefined) customers[idx][1] = payload.name;
+        if (payload.birthday !== undefined) customers[idx][5] = payload.birthday;
+        if (payload.height !== undefined) customers[idx][7] = payload.height;
+        if (payload.experience !== undefined) customers[idx][8] = payload.experience;
+        if (payload.gender !== undefined) customers[idx][9] = payload.gender;
+      }
+    }
+
     if (eventType === 'ROUTE_CREATED' && payload.id && payload.name) {
       routes.push([
         payload.id,
@@ -728,6 +752,7 @@ function rebuildTablesFromEventLog() {
 
   syncTracker();
   refreshPublicViews();
+  refreshProfileTabs_();
   SpreadsheetApp.getActive().toast('Rebuilt tables from EventLog.', 'Tracker Tools');
 }
 
@@ -742,5 +767,189 @@ function safeParseJson_(value) {
     return value ? JSON.parse(String(value)) : {};
   } catch (e) {
     return {};
+  }
+}
+
+function prepareEventEntryTab() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName('Event Entry') || ss.insertSheet('Event Entry');
+
+  sheet.getRange(1, 1, 1, 6).setValues([['Apply?', 'Event Type', 'Entity Type', 'Entity ID', 'Payload JSON', 'Actor (optional)']]);
+  sheet.setFrozenRows(1);
+
+  const maxRows = Math.max(sheet.getMaxRows(), 30);
+  if (sheet.getMaxRows() < 30) sheet.insertRowsAfter(sheet.getMaxRows(), 30 - sheet.getMaxRows());
+  sheet.getRange(2, 1, maxRows - 1, 1).insertCheckboxes();
+
+  const dv = SpreadsheetApp.newDataValidation().requireValueInList(EVENT_ENTRY_TYPES).build();
+  sheet.getRange(2, 2, maxRows - 1, 1).setDataValidation(dv);
+
+  const hints = [
+    ['', 'CUSTOMER_CREATED', 'customer', 'C-NEW001', '{"id":"C-NEW001","name":"Yuki","height":"168","experience":"new","gender":"F"}', ''],
+    ['', 'CUSTOMER_UPDATED', 'customer', 'C-NEW001', '{"id":"C-NEW001","experience":"6m"}', ''],
+    ['', 'ROUTE_CREATED', 'route', 'R-NEW001', '{"id":"R-NEW001","name":"Orange Dyno","difficulty":4,"createdAt":"2026-05-05T08:00:00Z"}', ''],
+    ['', 'CLIMB_LOGGED', 'climb', 'C-NEW001_R-NEW001', '{"timestamp":"2026-05-05T08:10:00Z","customerId":"C-NEW001","routeId":"R-NEW001","status":"◯","grade":4}', ''],
+    ['', 'TRAINING_LOGGED', 'training', 'C-NEW001', '{"timestamp":"2026-05-05T08:30:00Z","customerId":"C-NEW001","customerName":"Yuki","metric":"VR","value":10,"unit":"reps"}', '']
+  ];
+  sheet.getRange(2, 1, hints.length, hints[0].length).setValues(hints);
+  sheet.autoResizeColumns(1, 6);
+  SpreadsheetApp.getActive().toast('Event Entry tab prepared.', 'Tracker Tools');
+}
+
+function applyEventEntryRows() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName('Event Entry');
+  if (!sheet || sheet.getLastRow() < 2) return;
+
+  const rows = sheet.getRange(2, 1, sheet.getLastRow() - 1, 6).getValues();
+  let applied = 0;
+
+  rows.forEach((r, idx) => {
+    const isChecked = r[0] === true;
+    if (!isChecked) return;
+
+    const eventType = String(r[1] || '').trim();
+    const entityType = String(r[2] || '').trim();
+    const entityId = String(r[3] || '').trim();
+    const payload = safeParseJson_(r[4]);
+    const actor = String(r[5] || '').trim();
+    if (!eventType) return;
+
+    appendStructuredEvent_(eventType, entityType, entityId, payload, actor || undefined);
+    sheet.getRange(idx + 2, 1).setValue(false);
+    applied++;
+  });
+
+  if (!applied) {
+    SpreadsheetApp.getActive().toast('No checked Event Entry rows to apply.', 'Tracker Tools');
+    return;
+  }
+
+  rebuildTablesFromEventLog();
+  SpreadsheetApp.getActive().toast(`Applied ${applied} event row(s).`, 'Tracker Tools');
+}
+
+function migrateExistingTablesToEventLog() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const custSheet = ss.getSheetByName('Customers');
+  const routeSheet = ss.getSheetByName('Routes');
+  const logSheet = ss.getSheetByName('Logbook');
+  const trainingSheet = ss.getSheetByName('TrainingLog');
+  if (!custSheet || !routeSheet || !logSheet || !trainingSheet) return;
+
+  const actor = 'migration';
+  const existingEventSheet = ss.getSheetByName('EventLog');
+  if (existingEventSheet && existingEventSheet.getLastRow() > 1) {
+    const ui = SpreadsheetApp.getUi();
+    const res = ui.alert('EventLog already has data', 'Append migration events anyway?', ui.ButtonSet.YES_NO);
+    if (res !== ui.Button.YES) return;
+  }
+
+  const customers = custSheet.getRange(2, 1, Math.max(0, custSheet.getLastRow() - 1), 12).getValues().filter(r => r[0] && r[1]);
+  customers.forEach(c => {
+    appendStructuredEvent_('CUSTOMER_CREATED', 'customer', c[0], {
+      id: c[0], name: c[1], birthday: c[5] || '', height: c[7] || '', experience: c[8] || '', gender: c[9] || ''
+    }, actor);
+  });
+
+  const routes = routeSheet.getRange(2, 1, Math.max(0, routeSheet.getLastRow() - 1), 7).getValues().filter(r => r[0] && r[1]);
+  routes.forEach(r => {
+    appendStructuredEvent_('ROUTE_CREATED', 'route', r[0], {
+      id: r[0], name: r[1], difficulty: r[2] || '', link: r[3] || '', createdAt: r[4] instanceof Date ? r[4].toISOString() : ''
+    }, actor);
+  });
+
+  const climbs = logSheet.getRange(2, 1, Math.max(0, logSheet.getLastRow() - 1), 9).getValues().filter(r => r[1] && r[2]);
+  climbs.forEach(l => {
+    appendStructuredEvent_('CLIMB_LOGGED', 'climb', `${l[1]}_${l[2]}`, {
+      timestamp: l[0] instanceof Date ? l[0].toISOString() : '',
+      customerId: l[1], routeId: l[2], status: l[3], grade: l[4], height: l[5], age: l[6], experience: l[7], gender: l[8]
+    }, actor);
+  });
+
+  const trainings = trainingSheet.getRange(2, 1, Math.max(0, trainingSheet.getLastRow() - 1), 7).getValues().filter(r => r[1]);
+  trainings.forEach(t => {
+    appendStructuredEvent_('TRAINING_LOGGED', 'training', t[1], {
+      timestamp: t[0] instanceof Date ? t[0].toISOString() : '',
+      customerId: t[1], customerName: t[2], metric: t[3], value: t[4], unit: t[5], notes: t[6]
+    }, actor);
+  });
+
+  SpreadsheetApp.getActive().toast('Migration events appended to EventLog.', 'Tracker Tools');
+}
+
+function refreshProfileTabs_() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const custSheet = ss.getSheetByName('Customers');
+  const routeSheet = ss.getSheetByName('Routes');
+  const logSheet = ss.getSheetByName('Logbook');
+  const customerProfile = ss.getSheetByName('Customer Profile');
+  const routeProfile = ss.getSheetByName('Route Profile');
+
+  if (!custSheet || !routeSheet || !logSheet || !customerProfile || !routeProfile) return;
+
+  const customerId = String(customerProfile.getRange('A1').getValue() || '');
+  customerProfile.getRange('A3:B12').clearContent();
+  customerProfile.getRange('A3:A12').setValues([
+    ['Name'], ['Completion Rate'], ['Points'], ['Japanese Level'], ['V Scale Level'],
+    ['Age'], ['Height'], ['Experience'], ['Gender'], ['Recent Climbs (5)']
+  ]);
+
+  if (customerId) {
+    const rows = custSheet.getRange(2, 1, Math.max(0, custSheet.getLastRow() - 1), 12).getValues();
+    const c = rows.find(r => String(r[0]) === customerId);
+    if (c) {
+      customerProfile.getRange('B3').setValue(c[1] || '');
+      customerProfile.getRange('B4').setValue(c[2] || 0).setNumberFormat('0.00%');
+      customerProfile.getRange('B5').setValue(c[3] || 0);
+      customerProfile.getRange('B6').setValue(c[10] || '');
+      customerProfile.getRange('B7').setValue(c[11] || c[4] || '');
+      customerProfile.getRange('B8').setValue(c[6] || '');
+      customerProfile.getRange('B9').setValue(c[7] || '');
+      customerProfile.getRange('B10').setValue(c[8] || '');
+      customerProfile.getRange('B11').setValue(c[9] || '');
+    }
+
+    const logs = logSheet.getRange(2, 1, Math.max(0, logSheet.getLastRow() - 1), 4).getValues()
+      .filter(r => String(r[1]) === customerId)
+      .sort((a, b) => new Date(b[0]).getTime() - new Date(a[0]).getTime())
+      .slice(0, 5)
+      .map(r => `${r[0]} | ${r[2]} | ${r[3]}`);
+    customerProfile.getRange('B12').setValue(logs.join('\n'));
+  }
+
+  const routeId = String(routeProfile.getRange('A1').getValue() || '');
+  routeProfile.getRange('A3:B11').clearContent();
+  routeProfile.getRange('A3:A11').setValues([
+    ['Route Name'], ['Difficulty #'], ['Japanese Grade'], ['V Scale Grade'], ['Created At'],
+    ['Attempts'], ['Sends (◎/◯)'], ['Unique Climbers'], ['Recent Attempts (5)']
+  ]);
+
+  if (routeId) {
+    const rows = routeSheet.getRange(2, 1, Math.max(0, routeSheet.getLastRow() - 1), 7).getValues();
+    const r = rows.find(x => String(x[0]) === routeId);
+    if (r) {
+      routeProfile.getRange('B3').setValue(r[1] || '');
+      routeProfile.getRange('B4').setValue(r[2] || '');
+      routeProfile.getRange('B5').setValue(r[5] || '');
+      routeProfile.getRange('B6').setValue(r[6] || '');
+      routeProfile.getRange('B7').setValue(r[4] || '');
+      if (r[4] instanceof Date) routeProfile.getRange('B7').setNumberFormat('yyyy-mm-dd hh:mm:ss');
+    }
+
+    const routeLogs = logSheet.getRange(2, 1, Math.max(0, logSheet.getLastRow() - 1), 4).getValues()
+      .filter(x => String(x[2]) === routeId);
+    const sends = routeLogs.filter(x => x[3] === '◎' || x[3] === '◯').length;
+    const unique = new Set(routeLogs.map(x => x[1])).size;
+    const recent = routeLogs
+      .sort((a, b) => new Date(b[0]).getTime() - new Date(a[0]).getTime())
+      .slice(0, 5)
+      .map(x => `${x[0]} | ${x[1]} | ${x[3]}`)
+      .join('\n');
+
+    routeProfile.getRange('B8').setValue(routeLogs.length);
+    routeProfile.getRange('B9').setValue(sends);
+    routeProfile.getRange('B10').setValue(unique);
+    routeProfile.getRange('B11').setValue(recent);
   }
 }

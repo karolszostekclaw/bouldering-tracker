@@ -31,17 +31,34 @@ function refreshRankingsView_() {
   const lastRow = customers.getLastRow();
 
   target.clear();
-  target.getRange('A1:F1').setValues([[
+  target.getRange('A1').setValue('Sort By');
+  target.getRange('B1').setValue(target.getRange('B1').getValue() || 'Points');
+  target.getRange('C1:F1').setValues([[
+    'Points',
+    'Completion Rate',
+    'Japanese Level',
+    'Name'
+  ]]);
+
+  const sortValidation = SpreadsheetApp.newDataValidation()
+    .requireValueInList(['Points', 'Completion Rate', 'Japanese Level', 'Name', 'V Scale Level'])
+    .build();
+  target.getRange('B1').setDataValidation(sortValidation);
+
+  target.getRange('A3:G3').setValues([[
     'Rank',
     'Customer ID',
     'Name',
     'Points',
     'Completion Rate',
+    'Japanese Level',
     'V Scale Level'
   ]]);
-  target.setFrozenRows(1);
+  target.setFrozenRows(3);
 
   if (lastRow < 2) return;
+
+  const sortBy = String(target.getRange('B1').getValue() || 'Points');
 
   const rows = customers.getRange(2, 1, lastRow - 1, 12).getValues()
     .filter(r => r[0] && r[1])
@@ -50,9 +67,23 @@ function refreshRankingsView_() {
       name: r[1],
       completion: Number(r[2]) || 0,
       points: Number(r[3]) || 0,
+      jlevel: r[10] || '',
       vlevel: r[11] || r[4] || ''
-    }))
-    .sort((a, b) => (b.points - a.points) || (b.completion - a.completion) || String(a.name).localeCompare(String(b.name)));
+    }));
+
+  const sorter = {
+    'Points': (a, b) => (b.points - a.points),
+    'Completion Rate': (a, b) => (b.completion - a.completion),
+    'Japanese Level': (a, b) => String(b.jlevel).localeCompare(String(a.jlevel), undefined, { numeric: true }),
+    'V Scale Level': (a, b) => String(b.vlevel).localeCompare(String(a.vlevel), undefined, { numeric: true }),
+    'Name': (a, b) => String(a.name).localeCompare(String(b.name))
+  };
+
+  rows.sort((a, b) => {
+    const primary = (sorter[sortBy] || sorter['Points'])(a, b);
+    if (primary !== 0) return primary;
+    return (b.points - a.points) || (b.completion - a.completion) || String(a.name).localeCompare(String(b.name));
+  });
 
   if (!rows.length) return;
 
@@ -62,12 +93,13 @@ function refreshRankingsView_() {
     r.name,
     r.points,
     r.completion,
+    r.jlevel,
     r.vlevel
   ]);
 
-  target.getRange(2, 1, out.length, out[0].length).setValues(out);
-  target.getRange(2, 5, out.length, 1).setNumberFormat('0.00%');
-  target.autoResizeColumns(1, 6);
+  target.getRange(4, 1, out.length, out[0].length).setValues(out);
+  target.getRange(4, 5, out.length, 1).setNumberFormat('0.00%');
+  target.autoResizeColumns(1, 7);
 }
 
 function refreshNewRoutesView_(daysWindow) {
