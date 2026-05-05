@@ -1653,7 +1653,10 @@ function applySheetHeadersLanguage_() {
   const ja = getUiLanguage_() === 'JA';
 
   const data = sheetByKey_(ss, 'Data');
-  if (data) data.getRange('A1:D1').setValues([[ja ? 'プロフィール' : 'Open Profile', ja ? '顧客' : 'Customer', ja ? '課題' : 'Route', ja ? '状態' : 'Status']]);
+  if (data) {
+    data.getRange('A1:C1').setValues([[ja ? 'プロフィール' : 'Open Profile', ja ? '顧客' : 'Customer', ja ? '課題' : 'Route']]);
+    data.getRange('D1').clearContent().clearDataValidations();
+  }
 
   const customers = sheetByKey_(ss, 'Customers');
   if (customers) {
