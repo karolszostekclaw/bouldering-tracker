@@ -218,6 +218,11 @@ function syncTracker() {
     const maxR = sheet.getMaxRows();
     const maxC = sheet.getMaxColumns();
 
+    if (maxR >= 4) {
+      sheet.getRange(4, 1, 1, 4).clearContent();
+      sheet.getRange(4, 1, 1, 1).removeCheckboxes();
+    }
+
     if (maxR >= 5) {
       sheet.getRange(5, 1, maxR - 4, 4).clearContent();
       sheet.getRange(5, 1, maxR - 4, 1).removeCheckboxes();
