@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Bouldering Rankings</title>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 24px; }
+    h1 { margin: 0 0 12px; }
+    .meta { color: #666; font-size: 14px; margin-bottom: 12px; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+    th { background: #f5f5f5; position: sticky; top: 0; }
+    tr:nth-child(even) { background: #fafafa; }
+  </style>
+</head>
+<body>
+  <h1>Bouldering Rankings</h1>
+  <div class="meta" id="meta">Loading…</div>
+  <table id="tbl"></table>
+
+  <script>
+    // Replace with your published CSV URL for Rankings View tab.
+    const CSV_URL = 'PASTE_PUBLISHED_RANKINGS_CSV_URL_HERE';
+
+    function parseCsv(text) {
+      const rows = [];
+      let cur = '', row = [], q = false;
+      for (let i = 0; i < text.length; i++) {
+        const c = text[i], n = text[i + 1];
+        if (c === '"') {
+          if (q && n === '"') { cur += '"'; i++; }
+          else q = !q;
+        } else if (c === ',' && !q) {
+          row.push(cur); cur = '';
+        } else if ((c === '\n' || c === '\r') && !q) {
+          if (c === '\r' && n === '\n') i++;
+          row.push(cur); rows.push(row); row = []; cur = '';
+        } else {
+          cur += c;
+        }
+      }
+      if (cur.length || row.length) { row.push(cur); rows.push(row); }
+      return rows.filter(r => r.some(v => v !== ''));
+    }
+
+    function render(rows) {
+      const tbl = document.getElementById('tbl');
+      tbl.innerHTML = '';
+      if (!rows.length) return;
+      const [head, ...body] = rows;
+
+      const thead = document.createElement('thead');
+      const trh = document.createElement('tr');
+      head.forEach(h => { const th = document.createElement('th'); th.textContent = h; trh.appendChild(th); });
+      thead.appendChild(trh);
+      tbl.appendChild(thead);
+
+      const tbody = document.createElement('tbody');
+      body.forEach(r => {
+        const tr = document.createElement('tr');
+        r.forEach(v => { const td = document.createElement('td'); td.textContent = v; tr.appendChild(td); });
+        tbody.appendChild(tr);
+      });
+      tbl.appendChild(tbody);
+    }
+
+    async function load() {
+      if (!CSV_URL.startsWith('http')) {
+        document.getElementById('meta').textContent = 'Set CSV_URL in this file first.';
+        return;
+      }
+      const res = await fetch(CSV_URL, { cache: 'no-store' });
+      const text = await res.text();
+      const rows = parseCsv(text);
+      render(rows);
+      document.getElementById('meta').textContent = `Last updated: ${new Date().toLocaleString()}`;
+    }
+
+    load();
+    setInterval(load, 60_000); // refresh every minute
+  </script>
+</body>
+</html>

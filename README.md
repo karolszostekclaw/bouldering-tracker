@@ -85,6 +85,27 @@ Use `Setup / Repair Spreadsheet` + `Sync IDs & Dashboards` to rebuild generated 
   - **Sync IDs & Dashboards**
   - **Refresh Rankings & New Routes Views**
 
+## Publish Rankings View to a website
+
+### 1) Publish only Rankings tab from Google Sheets
+1. In Google Sheets: **File → Share → Publish to web**.
+2. Select tab: **Rankings View**.
+3. Choose output format: **CSV**.
+4. Copy the published CSV URL.
+
+### 2) Use provided web page template
+- File: `web/rankings_embed.html`
+- Open it and replace:
+  - `CSV_URL = 'PASTE_PUBLISHED_RANKINGS_CSV_URL_HERE'`
+- Host this HTML on any static host (GitHub Pages, Netlify, Vercel, etc.).
+- It auto-refreshes every minute.
+
+### 3) Simple iframe option
+You can also publish Rankings as web page and embed with:
+```html
+<iframe src="PUBLISHED_RANKINGS_PAGE_URL" width="100%" height="800" frameborder="0"></iframe>
+```
+
 ## Process rule
 Any script change must include:
 1. changelog update,
