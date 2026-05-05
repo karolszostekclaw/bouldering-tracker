@@ -459,23 +459,23 @@ function updateLogDropdowns() {
     .flat()
     .filter(String);
 
-  if (custDropdownList.length > 0) {
-    dataSheet.getRange('B2').setDataValidation(
-      SpreadsheetApp.newDataValidation().requireValueInList(custDropdownList).build()
-    );
-  }
+  dataSheet.getRange('B2').setDataValidation(
+    SpreadsheetApp.newDataValidation()
+      .requireValueInList(custDropdownList.length ? custDropdownList : ['No customers yet'])
+      .build()
+  );
 
-  if (routeList.length > 0) {
-    const routeValidation = SpreadsheetApp.newDataValidation().requireValueInList(routeList).build();
-    dataSheet.getRange('B3').setDataValidation(routeValidation);
-    if (profileSheet) profileSheet.getRange('J1').setDataValidation(routeValidation);
-  }
+  const routeValidation = SpreadsheetApp.newDataValidation()
+    .requireValueInList(routeList.length ? routeList : ['No routes yet'])
+    .build();
+  dataSheet.getRange('B3').setDataValidation(routeValidation);
+  if (profileSheet) profileSheet.getRange('J1').setDataValidation(routeValidation);
 
-  if (statusList.length > 0) {
-    const statusValidation = SpreadsheetApp.newDataValidation().requireValueInList(statusList).build();
-    dataSheet.getRange('C3').setDataValidation(statusValidation);
-    if (profileSheet) profileSheet.getRange('J2').setDataValidation(statusValidation);
-  }
+  const statusValidation = SpreadsheetApp.newDataValidation()
+    .requireValueInList(statusList.length ? statusList : ['◎', '◯', '△', '✓'])
+    .build();
+  dataSheet.getRange('C3').setDataValidation(statusValidation);
+  if (profileSheet) profileSheet.getRange('J2').setDataValidation(statusValidation);
 
   if (profileSheet) {
     const trainingMetricValidation = SpreadsheetApp.newDataValidation()
@@ -696,7 +696,7 @@ function rebuildTablesFromEventLog() {
         payload.id,
         payload.name,
         '', '', '',
-        payload.birthday || '',
+        parseMaybeDate_(payload.birthday),
         '',
         payload.height || '',
         payload.experience || '',
@@ -709,7 +709,7 @@ function rebuildTablesFromEventLog() {
       const idx = customers.findIndex(c => c[0] === payload.id);
       if (idx >= 0) {
         if (payload.name !== undefined) customers[idx][1] = payload.name;
-        if (payload.birthday !== undefined) customers[idx][5] = payload.birthday;
+        if (payload.birthday !== undefined) customers[idx][5] = parseMaybeDate_(payload.birthday);
         if (payload.height !== undefined) customers[idx][7] = payload.height;
         if (payload.experience !== undefined) customers[idx][8] = payload.experience;
         if (payload.gender !== undefined) customers[idx][9] = payload.gender;
@@ -800,6 +800,7 @@ function prepareEventEntryTab() {
   sheet.getRange('A9').setValue('Apply Customer Event');
   sheet.getRange('B9').insertCheckboxes();
   sheet.getRange('B2').setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(['CREATE', 'UPDATE']).build());
+  sheet.getRange('B8').setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(['M', 'F', 'Other']).build());
 
   sheet.getRange('D1').setValue('Route Event');
   sheet.getRange('D2:E7').setValues([
@@ -1030,7 +1031,7 @@ function applyEventEntryUiActions_(a1) {
     const payload = {
       id: customerId,
       name: String(sheet.getRange('B4').getValue() || ''),
-      birthday: String(sheet.getRange('B5').getValue() || ''),
+      birthday: normalizeDateInput_(sheet.getRange('B5').getValue()),
       height: String(sheet.getRange('B6').getValue() || ''),
       experience: String(sheet.getRange('B7').getValue() || ''),
       gender: String(sheet.getRange('B8').getValue() || '')
@@ -1179,4 +1180,18 @@ function refreshCustomerGradeDisplayFormulas_(custSheet) {
   }
   custSheet.getRange(2, 11, numRows, 1).setFormulas(jp);
   custSheet.getRange(2, 12, numRows, 1).setFormulas(v);
+}
+
+function normalizeDateInput_(value) {
+  if (!value) return '';
+  if (value instanceof Date && !isNaN(value.getTime())) return value.toISOString();
+  const d = new Date(value);
+  return isNaN(d.getTime()) ? String(value) : d.toISOString();
+}
+
+function parseMaybeDate_(value) {
+  if (!value) return '';
+  if (value instanceof Date) return value;
+  const d = new Date(value);
+  return isNaN(d.getTime()) ? value : d;
 }
