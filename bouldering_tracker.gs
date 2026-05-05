@@ -36,6 +36,7 @@ function setupSpreadsheet() {
   ensureSheetWithHeaders_(ss, 'Route Profile', ['Route ID']);
 
   seedDefaultSettings_();
+  ensureTrainingMetricConfig_(ss.getSheetByName('Settings'));
   ensureGradeConversionSheet_(ss);
   prepareEventEntryTab();
   installTriggers();
@@ -203,12 +204,36 @@ function handleEdit(e) {
   if (!e || !e.range || e.value === undefined) return;
 
   const sheet = e.range.getSheet();
+  const sheetName = sheet.getName();
+
+  if (sheetName === 'Customer Profile') {
+    const a1cp = e.range.getA1Notation();
+
+    if (a1cp === 'J8') {
+      autofillTrainingUnitFromMetric_();
+      return;
+    }
+
+    if (e.value === 'TRUE' && a1cp === 'K3') {
+      e.range.setValue(false);
+      logClimbFromProfile();
+      return;
+    }
+
+    if (e.value === 'TRUE' && a1cp === 'K11') {
+      e.range.setValue(false);
+      logTrainingFromCustomerProfile();
+      return;
+    }
+    return;
+  }
+
   if (sheet.getName() === 'Event Entry') {
     if (e.value === 'TRUE') applyEventEntryUiActions_(e.range.getA1Notation());
     return;
   }
 
-  if (sheet.getName() !== 'Data') return;
+  if (sheetName !== 'Data') return;
 
   const row = e.range.getRow();
   const col = e.range.getColumn();
@@ -333,8 +358,8 @@ function logClimbFromProfile() {
   if (!profileSheet || !logSheet || !routeSheet || !custSheet) return;
 
   const customerId = profileSheet.getRange('A1').getValue();
-  const routeEntry = profileSheet.getRange('J1').getValue();
-  const status = profileSheet.getRange('J2').getValue();
+  const routeEntry = profileSheet.getRange('J2').getValue();
+  const status = profileSheet.getRange('J3').getValue();
 
   const routeData = routeSheet.getRange('A2:C' + routeSheet.getLastRow()).getValues();
   const routeResult = resolveRouteId_(routeEntry, routeData);
@@ -369,7 +394,7 @@ function logClimbFromProfile() {
     experience: exp,
     gender: gen
   });
-  profileSheet.getRange('J1:J2').clearContent();
+  profileSheet.getRange('J2:J3').clearContent();
 
   syncTracker();
   ss.toast('Logged climb for ' + (cMatch ? cMatch[1] : 'User'), 'Success');
@@ -395,10 +420,10 @@ function logTrainingFromCustomerProfile() {
   if (!profileSheet || !custSheet) return;
 
   const customerId = profileSheet.getRange('A1').getValue();
-  const metric = profileSheet.getRange('J7').getValue();
-  const value = profileSheet.getRange('J8').getValue();
-  const unit = profileSheet.getRange('J9').getValue();
-  const notes = profileSheet.getRange('J10').getValue();
+  const metric = profileSheet.getRange('J8').getValue();
+  const value = profileSheet.getRange('J9').getValue();
+  const unit = profileSheet.getRange('J10').getValue();
+  const notes = profileSheet.getRange('J11').getValue();
 
   if (!customerId || !metric || value === '') {
     SpreadsheetApp.getUi().alert('Please ensure Customer ID, Training Metric, and Value are filled in.');
@@ -430,7 +455,7 @@ function logTrainingFromCustomerProfile() {
     notes
   });
 
-  profileSheet.getRange('J7:J10').clearContent();
+  profileSheet.getRange('J8:J11').clearContent();
   ss.toast('Training log added for ' + (customerName || customerId), 'Success');
 }
 
@@ -469,20 +494,26 @@ function updateLogDropdowns() {
     .requireValueInList(routeList.length ? routeList : ['No routes yet'])
     .build();
   dataSheet.getRange('B3').setDataValidation(routeValidation);
-  if (profileSheet) profileSheet.getRange('J1').setDataValidation(routeValidation);
+  if (profileSheet) profileSheet.getRange('J2').setDataValidation(routeValidation);
 
   const statusValidation = SpreadsheetApp.newDataValidation()
     .requireValueInList(statusList.length ? statusList : ['◎', '◯', '△', '✓'])
     .build();
   dataSheet.getRange('C3').setDataValidation(statusValidation);
-  if (profileSheet) profileSheet.getRange('J2').setDataValidation(statusValidation);
+  if (profileSheet) profileSheet.getRange('J3').setDataValidation(statusValidation);
 
   if (profileSheet) {
+    const metricCfg = getTrainingMetricConfig_(settingsSheet);
+    const metricList = metricCfg.list.length ? metricCfg.list : TRAINING_METRICS;
     const trainingMetricValidation = SpreadsheetApp.newDataValidation()
-      .requireValueInList(TRAINING_METRICS)
+      .requireValueInList(metricList)
       .build();
 
-    profileSheet.getRange('J7').setDataValidation(trainingMetricValidation);
+    profileSheet.getRange('J8').setDataValidation(trainingMetricValidation);
+
+    // Quick-action checkboxes replacing drawing buttons
+    profileSheet.getRange('K3').insertCheckboxes();
+    profileSheet.getRange('K11').insertCheckboxes();
   }
 }
 
@@ -848,7 +879,9 @@ function prepareEventEntryTab() {
   ]);
   sheet.getRange('J9').setValue('Apply Training Event');
   sheet.getRange('K9').insertCheckboxes();
-  sheet.getRange('K5').setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(TRAINING_METRICS).build());
+  const metricCfg = getTrainingMetricConfig_(ss.getSheetByName('Settings'));
+  const metricList = metricCfg.list.length ? metricCfg.list : TRAINING_METRICS;
+  sheet.getRange('K5').setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(metricList).build());
 
   sheet.getRange('A20:F20').setValues([['Apply?', 'Event Type', 'Entity Type', 'Entity ID', 'Payload JSON', 'Actor (optional)']]);
   if (sheet.getMaxRows() < 60) sheet.insertRowsAfter(sheet.getMaxRows(), 60 - sheet.getMaxRows());
@@ -951,6 +984,12 @@ function refreshProfileTabs_() {
 
   if (!custSheet || !routeSheet || !logSheet || !customerProfile || !routeProfile) return;
 
+  // Customer Profile input labels (right-side quick log UI)
+  customerProfile.getRange('I2:I3').setValues([['Log Climb Route'], ['Log Climb Status']]);
+  customerProfile.getRange('I8:I11').setValues([['Training Metric'], ['Training Value'], ['Training Unit'], ['Training Notes']]);
+  customerProfile.getRange('I1').setValue('Quick Actions');
+  customerProfile.getRange('I12').setValue('Tick K3 to log climb / K11 to log training');
+
   const customerId = String(customerProfile.getRange('A1').getValue() || '');
   customerProfile.getRange('A3:B12').clearContent();
   customerProfile.getRange('A3:A12').setValues([
@@ -1017,6 +1056,54 @@ function refreshProfileTabs_() {
     routeProfile.getRange('B10').setValue(unique);
     routeProfile.getRange('B11').setValue(recent);
   }
+
+  // Route image area (large merged patch)
+  try {
+    routeProfile.getRange('C13:H28').breakApart();
+  } catch (e) {}
+  routeProfile.getRange('C13:H28').merge();
+  routeProfile.getRange('C13').setFormula('=IF(A1="", "", LET(raw_url, XLOOKUP(A1, Routes!A:A, Routes!D:D), IFERROR(IMAGE("https://drive.google.com/uc?id=" & REGEXEXTRACT(raw_url, "/d/([a-zA-Z0-9_-]+)")), IMAGE(raw_url))))');
+}
+
+function ensureTrainingMetricConfig_(settingsSheet) {
+  if (!settingsSheet) return;
+
+  settingsSheet.getRange('F1:H1').setValues([['Metric', 'Default Unit', 'Higher Is Better']]);
+  if (settingsSheet.getLastRow() < 2 || !settingsSheet.getRange('F2').getValue()) {
+    const seed = TRAINING_METRICS.map(m => [m, '', 1]);
+    settingsSheet.getRange(2, 6, seed.length, 3).setValues(seed);
+  }
+}
+
+function getTrainingMetricConfig_(settingsSheet) {
+  if (!settingsSheet || settingsSheet.getLastRow() < 2) return { list: [], byMetric: {} };
+
+  const values = settingsSheet.getRange(2, 6, settingsSheet.getLastRow() - 1, 3).getValues();
+  const list = [];
+  const byMetric = {};
+  values.forEach(r => {
+    const metric = String(r[0] || '').trim();
+    if (!metric) return;
+    list.push(metric);
+    byMetric[metric] = {
+      unit: String(r[1] || '').trim(),
+      higherIsBetter: r[2] === '' ? true : Boolean(r[2])
+    };
+  });
+  return { list, byMetric };
+}
+
+function autofillTrainingUnitFromMetric_() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const profile = ss.getSheetByName('Customer Profile');
+  const settings = ss.getSheetByName('Settings');
+  if (!profile || !settings) return;
+
+  const metric = String(profile.getRange('J8').getValue() || '').trim();
+  if (!metric) return;
+  const cfg = getTrainingMetricConfig_(settings);
+  const unit = cfg.byMetric[metric] ? cfg.byMetric[metric].unit : '';
+  if (unit) profile.getRange('J10').setValue(unit);
 }
 
 function applyEventEntryUiActions_(a1) {
