@@ -16,6 +16,7 @@ function onOpen() {
     .addItem('Apply Event Entry Rows', 'applyEventEntryRows')
     .addItem('Migrate Existing Tables to EventLog', 'migrateExistingTablesToEventLog')
     .addItem('Import Demo/Test Data', 'importDemoTestData')
+    .addItem('Reset Data (Safe)', 'resetDataSafe')
     .addSeparator()
     .addItem('Log Climb from Data Sheet', 'logFromDataSheet')
     .addItem('Log Climb from Customer Profile', 'logClimbFromProfile')
@@ -1192,6 +1193,48 @@ function importDemoTestData() {
 
   rebuildTablesFromEventLog();
   SpreadsheetApp.getActive().toast('Demo/test data imported.', 'Tracker Tools');
+}
+
+function resetDataSafe() {
+  const ui = SpreadsheetApp.getUi();
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+
+  const first = ui.alert(
+    'Reset Data (Safe)',
+    'This will clear materialized data tables (Customers/Routes/Logbook/TrainingLog) and generated views. Continue?',
+    ui.ButtonSet.YES_NO
+  );
+  if (first !== ui.Button.YES) return;
+
+  clearSheetDataRows_('Customers', 12);
+  clearSheetDataRows_('Routes', 7);
+  clearSheetDataRows_('Logbook', 9);
+  clearSheetDataRows_('TrainingLog', 7);
+  clearSheetDataRows_('Data', Math.max(4, ss.getSheetByName('Data') ? ss.getSheetByName('Data').getMaxColumns() : 4));
+  clearSheetDataRows_('Rankings View', 7);
+  clearSheetDataRows_('New Routes', 6);
+
+  const second = ui.alert(
+    'Also clear EventLog?',
+    'Choose YES to also remove EventLog history (full reset). Choose NO to keep EventLog.',
+    ui.ButtonSet.YES_NO
+  );
+
+  if (second === ui.Button.YES) {
+    clearSheetDataRows_('EventLog', 7);
+  }
+
+  runPostUpdateRoutine();
+  SpreadsheetApp.getActive().toast('Reset complete.', 'Tracker Tools');
+}
+
+function clearSheetDataRows_(sheetName, cols) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName(sheetName);
+  if (!sheet) return;
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) return;
+  sheet.getRange(2, 1, lastRow - 1, cols).clearContent();
 }
 
 function applyEventEntryUiActions_(a1) {
