@@ -34,12 +34,7 @@ function refreshRankingsView_() {
   target.clear();
   target.getRange('A1').setValue(ja ? '並び替え' : 'Sort By');
   target.getRange('B1').setValue(target.getRange('B1').getValue() || 'Points');
-  target.getRange('C1:F1').setValues([[
-    'Points',
-    'Completion Rate',
-    ja ? 'Japanese Level' : 'Japanese Level',
-    'Name'
-  ]]);
+  target.getRange('C1:G1').clearContent();
 
   const sortValidation = SpreadsheetApp.newDataValidation()
     .requireValueInList(['Points', 'Completion Rate', 'Japanese Level', 'Name', 'V Scale Level'])
