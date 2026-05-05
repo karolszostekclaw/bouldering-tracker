@@ -17,6 +17,10 @@ Main workflow:
 
 ## First-time setup
 
+Prerequisite (one-time per Google account):
+- Enable Apps Script API access: `https://script.google.com/home/usersettings`
+- If just enabled, wait 1–3 minutes before running setup/push commands.
+
 After pasting/updating the Apps Script:
 
 1. Reload the spreadsheet.

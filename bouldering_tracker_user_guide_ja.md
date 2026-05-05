@@ -17,6 +17,10 @@
 
 ## 初回セットアップ
 
+事前条件（Googleアカウントごとに一度だけ）：
+- Apps Script API アクセスを有効化してください：`https://script.google.com/home/usersettings`
+- 有効化直後は、セットアップ/プッシュ前に 1〜3 分待ってください。
+
 Apps Script を貼り付け・更新した後：
 
 1. スプレッドシートを再読み込みします。

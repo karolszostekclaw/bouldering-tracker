@@ -21,6 +21,11 @@ cd <repo>
 ./setup.sh <SPREADSHEET_ID>
 ```
 
+Prerequisite (one-time per Google account):
+- Enable Apps Script API access in your account settings:
+  `https://script.google.com/home/usersettings`
+- If you just enabled it, wait 1–3 minutes before running setup.
+
 How to get `<SPREADSHEET_ID>`:
 1. Open the Google Sheet in browser.
 2. In URL, copy the part between `/d/` and `/edit`.
