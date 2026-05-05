@@ -6,7 +6,7 @@ const GRADE_CONVERSION_SHEET = 'GradeConversion';
 
 const I18N = {
   EN: {
-    MENU: '🧗‍♂️ Tracker Tools',
+    MENU: '🧗‍♂️ Tracker Tools / ツール',
     SETUP: 'Setup / Repair Spreadsheet',
     POST_UPDATE: 'Run Post-Update Routine',
     SYNC: 'Sync IDs & Dashboards',
@@ -24,7 +24,7 @@ const I18N = {
     LOG_TRAINING: 'Log Training from Customer Profile'
   },
   JA: {
-    MENU: '🧗‍♂️ トラッカーツール',
+    MENU: '🧗‍♂️ Tracker Tools / ツール',
     SETUP: '初期設定 / 修復',
     POST_UPDATE: '更新後ルーチン実行',
     SYNC: 'ID・ダッシュボード同期',
@@ -101,6 +101,7 @@ function applyUiLanguage() {
   prepareEventEntryTab();
   refreshProfileTabs_();
   refreshPublicViews();
+  applySheetHeadersLanguage_();
   onOpen();
   SpreadsheetApp.getActive().toast(`UI language applied: ${lang}`, 'Tracker Tools');
 }
@@ -1535,4 +1536,53 @@ function getUiLanguage_() {
 function t_(key) {
   const lang = getUiLanguage_();
   return (I18N[lang] && I18N[lang][key]) || I18N.EN[key] || key;
+}
+
+function applySheetHeadersLanguage_() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ja = getUiLanguage_() === 'JA';
+
+  const data = ss.getSheetByName('Data');
+  if (data) data.getRange('A1:D1').setValues([[ja ? 'プロフィール' : 'Open Profile', ja ? '顧客' : 'Customer', ja ? '課題' : 'Route', ja ? '状態' : 'Status']]);
+
+  const customers = ss.getSheetByName('Customers');
+  if (customers) {
+    customers.getRange('A1:L1').setValues([[
+      'ID',
+      ja ? '名前' : 'Name',
+      ja ? '完登率' : 'Completion Rate',
+      ja ? 'ポイント' : 'Points',
+      ja ? 'Vレベル' : 'V Scale Level',
+      ja ? '誕生日' : 'Birthday',
+      ja ? '年齢' : 'Age',
+      ja ? '身長' : 'Height',
+      ja ? '経験' : 'Experience',
+      ja ? '性別' : 'Gender',
+      ja ? '和グレード' : 'Japanese Level',
+      ja ? 'Vグレード' : 'V Scale Level'
+    ]]);
+  }
+
+  const routes = ss.getSheetByName('Routes');
+  if (routes) {
+    routes.getRange('A1:G1').setValues([[
+      'ID',
+      ja ? '課題名' : 'Name',
+      ja ? '難易度値' : 'V Scale Difficulty',
+      ja ? 'リンク' : 'Link',
+      ja ? '作成日時' : 'Created At',
+      ja ? '和グレード' : 'Japanese Grade',
+      ja ? 'Vグレード' : 'V Scale Grade'
+    ]]);
+  }
+
+  const settings = ss.getSheetByName('Settings');
+  if (settings) {
+    settings.getRange('A1:D1').setValues([[
+      ja ? '記号' : 'Status',
+      ja ? 'ラベル' : 'Label',
+      ja ? '点数' : 'Score',
+      ja ? '完登?' : 'Complete?'
+    ]]);
+  }
 }
