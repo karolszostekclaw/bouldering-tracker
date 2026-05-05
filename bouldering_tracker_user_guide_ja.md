@@ -103,7 +103,16 @@ Apps Script を貼り付け・更新した後：
 特定の顧客のプロフィール画面です。
 
 - **A1** に現在表示している顧客IDが入ります。
-- 右側のルート/ステータス入力欄から、その顧客の登った記録を追加できます。
+- 右側のクイック入力欄：
+  - **J2** ルート
+  - **J3** ステータス
+  - **K3** チェックで登攀イベント送信
+- トレーニング入力欄：
+  - **J8** 指標
+  - **J9** 値
+  - **J10** 単位（Settings の指標設定から自動入力）
+  - **J11** メモ
+  - **K11** チェックでトレーニングイベント送信
 
 ### Route Profile
 
@@ -223,9 +232,11 @@ Apps Script を貼り付け・更新した後：
 
 ### 手動イベント入力と移行
 
-- **Prepare Event Entry Tab**: 1行=1イベントの入力タブを作成します。
-- **Apply Event Entry Rows**: チェック済み行を `EventLog` に追加し、テーブルを再構築します。
+- **Prepare Event Entry Tab**: Customer / Route / Climb / Training のガイド付き入力ブロック＋上級者向け行入力を作成します。
+- **Apply Event Entry Rows**: チェック済みの上級者向け行を `EventLog` に追加し、テーブルを再構築します。
 - **Migrate Existing Tables to EventLog**: 既存の `Customers/Routes/Logbook/TrainingLog` を `EventLog` に移行します。
+- **Run Post-Update Routine**: スクリプト更新後の推奨ワンクリック処理です。
+- **Reset Data (Safe)**: 生成/集計タブをクリアし、必要に応じて EventLog も削除します。
 
 ---
 

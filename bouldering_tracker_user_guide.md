@@ -103,7 +103,16 @@ Columns:
 Shows one customer’s details and recent/important route data.
 
 - **A1** contains the active customer ID.
-- Use the route/status inputs on the right side to log a climb for this customer.
+- Quick log inputs (right side):
+  - **J2** route dropdown
+  - **J3** status dropdown
+  - tick **K3** checkbox to submit climb event
+- Training inputs:
+  - **J8** metric
+  - **J9** value
+  - **J10** unit (auto-filled from Settings metric config)
+  - **J11** notes
+  - tick **K11** checkbox to submit training event
 
 ### Route Profile
 
@@ -223,9 +232,11 @@ If this menu item is missing, include `bouldering_tracker_views.gs` in your Apps
 
 ### Manual event entry and migration
 
-- **Prepare Event Entry Tab**: creates a guided tab where each row is one event.
-- **Apply Event Entry Rows**: appends checked rows into `EventLog` and rebuilds tables.
+- **Prepare Event Entry Tab**: creates guided input blocks (Customer / Route / Climb / Training) and advanced row mode.
+- **Apply Event Entry Rows**: appends checked advanced rows into `EventLog` and rebuilds tables.
 - **Migrate Existing Tables to EventLog**: imports current `Customers/Routes/Logbook/TrainingLog` into `EventLog` for legacy spreadsheet onboarding.
+- **Run Post-Update Routine**: one-click recommended routine after script updates.
+- **Reset Data (Safe)**: clears materialized/generated tabs and optionally EventLog.
 
 ---
 
