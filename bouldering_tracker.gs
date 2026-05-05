@@ -130,6 +130,7 @@ function runPostUpdateRoutine() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   ensureRequiredSheets_(ss);
   ensureUiLanguageSetting_(sheetByKey_(ss, 'Settings'));
+  forceResetLanguageDropdown_();
   ensureTrainingMetricConfig_(sheetByKey_(ss, 'Settings'));
   ensureGradeConversionSheet_(ss);
   installTriggers();
@@ -196,9 +197,9 @@ function syncTracker() {
       const formulasG = [];
 
       for (let row = 2; row <= custLastRow; row++) {
-        formulasC.push([`=IF(A${row}="", "", IFERROR(LET(comp, FILTER(${settingsRef}!$A$2:$A$${settingsLastRow}, ${settingsRef}!$D$2:$D$${settingsLastRow}=1), scores, FILTER(${dataRef}!$D$4:$ZZ, ${dataRef}!$B$4:$B=A${row}), tops, SUM(MAP(scores, LAMBDA(s, --ISNUMBER(MATCH(s, comp, 0))))), tops / COUNTA(${dataRef}!$D$2:$2)), 0))`]);
-        formulasD.push([`=IF(A${row}="", "", SUM(ARRAYFORMULA(IFERROR(XLOOKUP(FILTER(${dataRef}!$D$4:$ZZ, ${dataRef}!$B$4:$B=A${row}), ${settingsRef}!$A$2:$A$${settingsLastRow}, ${settingsRef}!$C$2:$C$${settingsLastRow}), 0))))`]);
-        formulasE.push([`=IF(A${row}="", "", IFERROR(LET(comp, FILTER(${settingsRef}!$A$2:$A$${settingsLastRow}, ${settingsRef}!$D$2:$D$${settingsLastRow}=1), scores, FILTER(${dataRef}!$D$4:$ZZ, ${dataRef}!$B$4:$B=A${row}), valid, MAP(scores, LAMBDA(s, ISNUMBER(MATCH(s, comp, 0)))), sent_ids, FILTER(${dataRef}!$D$2:$ZZ$2, valid), grades, MAP(TRANSPOSE(sent_ids), LAMBDA(id, XLOOKUP(id, ${routesRef}!$A$2:$A, ${routesRef}!$C$2:$C, 0))), AVERAGE(ARRAY_CONSTRAIN(SORT(grades, 1, FALSE), 5, 1))), "No Sends"))`]);
+        formulasC.push([`=IF(A${row}="", "", IFERROR(LET(comp, FILTER(${settingsRef}!$A$2:$A$${settingsLastRow}, ${settingsRef}!$D$2:$D$${settingsLastRow}=1), scores, FILTER(${dataRef}!$E$5:$ZZ, ${dataRef}!$B$5:$B=A${row}), tops, SUM(MAP(scores, LAMBDA(s, --ISNUMBER(MATCH(s, comp, 0))))), tops / COUNTA(${dataRef}!$E$2:$2)), 0))`]);
+        formulasD.push([`=IF(A${row}="", "", SUM(ARRAYFORMULA(IFERROR(XLOOKUP(FILTER(${dataRef}!$E$5:$ZZ, ${dataRef}!$B$5:$B=A${row}), ${settingsRef}!$A$2:$A$${settingsLastRow}, ${settingsRef}!$C$2:$C$${settingsLastRow}), 0))))`]);
+        formulasE.push([`=IF(A${row}="", "", IFERROR(LET(comp, FILTER(${settingsRef}!$A$2:$A$${settingsLastRow}, ${settingsRef}!$D$2:$D$${settingsLastRow}=1), scores, FILTER(${dataRef}!$E$5:$ZZ, ${dataRef}!$B$5:$B=A${row}), valid, MAP(scores, LAMBDA(s, ISNUMBER(MATCH(s, comp, 0)))), sent_ids, FILTER(${dataRef}!$E$2:$ZZ$2, valid), grades, MAP(TRANSPOSE(sent_ids), LAMBDA(id, XLOOKUP(id, ${routesRef}!$A$2:$A, ${routesRef}!$C$2:$C, 0))), AVERAGE(ARRAY_CONSTRAIN(SORT(grades, 1, FALSE), 5, 1))), "No Sends"))`]);
         formulasG.push([`=IF(F${row}="", "", IFERROR(DATEDIF(F${row}, TODAY(), "Y"), "Invalid Date"))`]);
       }
 
@@ -217,28 +218,34 @@ function syncTracker() {
     const maxR = sheet.getMaxRows();
     const maxC = sheet.getMaxColumns();
 
-    if (maxR >= 4) {
-      sheet.getRange(4, 1, maxR - 3, 3).clearContent();
-      sheet.getRange(4, 1, maxR - 3, 1).removeCheckboxes();
+    if (maxR >= 5) {
+      sheet.getRange(5, 1, maxR - 4, 4).clearContent();
+      sheet.getRange(5, 1, maxR - 4, 1).removeCheckboxes();
     }
 
     if (maxC >= 4) {
-      sheet.getRange(1, 4, 3, maxC - 3).clearContent();
-      sheet.getRange(1, 4, 1, maxC - 3).removeCheckboxes();
-      sheet.getRange(1, 4, 3, maxC - 3).clearDataValidations();
-      sheet.getRange(4, 4, maxR - 3, maxC - 3).clearContent().clearDataValidations();
+      sheet.getRange(1, 5, 4, maxC - 4).clearContent();
+      sheet.getRange(1, 5, 1, maxC - 4).removeCheckboxes();
+      sheet.getRange(1, 5, 4, maxC - 4).clearDataValidations();
+      if (maxR >= 5) sheet.getRange(5, 5, maxR - 4, maxC - 4).clearContent().clearDataValidations();
     }
 
     if (finalCusts.length > 0) {
-      sheet.getRange(4, 2, finalCusts.length, 2).setValues(finalCusts);
+      sheet.getRange(5, 2, finalCusts.length, 2).setValues(finalCusts);
+      const cRates = finalCusts.map(c => {
+        const m = custSheet.getRange(2,1,Math.max(0,custSheet.getLastRow()-1),3).getValues().find(r => r[0]===c[0]);
+        return [m ? m[2] : ''];
+      });
+      sheet.getRange(5,4,finalCusts.length,1).setValues(cRates).setNumberFormat('0%');
     }
 
     if (finalRoutes.length > 0) {
-      sheet.getRange(2, 4, 1, finalRoutes.length).setValues([finalRoutes.map(r => r[0])]);
-      sheet.getRange(3, 4, 1, finalRoutes.length).setValues([finalRoutes.map(r => r[1])]);
+      sheet.getRange(2, 5, 1, finalRoutes.length).setValues([finalRoutes.map(r => r[0])]);
+      sheet.getRange(3, 5, 1, finalRoutes.length).setValues([finalRoutes.map(r => r[1])]);
     }
 
-    sheet.setFrozenRows(3);
+    sheet.getRange('D4').setValue(getUiLanguage_()==='JA' ? '完登率' : 'Comp %');
+    sheet.setFrozenRows(4);
     sheet.setFrozenColumns(3);
 
     // --- 4. PROCESS LOGBOOK DATA (Filtering) ---
@@ -280,9 +287,19 @@ function syncTracker() {
     // --- 5. FILL GRID & FINAL UI ---
     if (finalCusts.length > 0 && finalRoutes.length > 0) {
       const gridValues = finalCusts.map(c => finalRoutes.map(r => bestScores[c[0] + '_' + r[0]] || ''));
-      sheet.getRange(4, 4, finalCusts.length, finalRoutes.length).setValues(gridValues);
-      sheet.getRange(4, 1, finalCusts.length, 1).insertCheckboxes();
-      sheet.getRange(1, 4, 1, finalRoutes.length).insertCheckboxes();
+      sheet.getRange(5, 5, finalCusts.length, finalRoutes.length).setValues(gridValues);
+      sheet.getRange(5, 1, finalCusts.length, 1).insertCheckboxes();
+      sheet.getRange(1, 5, 1, finalRoutes.length).insertCheckboxes();
+
+      const completeSet = new Set(settingsSheet.getRange(2,1,Math.max(0,settingsSheet.getLastRow()-1),4).getValues().filter(r=>Number(r[3])===1).map(r=>r[0]));
+      const routeComp = finalRoutes.map(r => {
+        const routeId = r[0];
+        const routeLogs = logs.filter(l => l[2] === routeId);
+        const attempts = routeLogs.length;
+        const completes = routeLogs.filter(l => completeSet.has(l[3])).length;
+        return [attempts ? completes/attempts : 0];
+      });
+      sheet.getRange(4,5,1,finalRoutes.length).setValues([routeComp.map(x=>x[0])]).setNumberFormat('0%');
     }
 
     updateLogDropdowns();
@@ -1648,6 +1665,28 @@ function normalizeUiLanguageCell_() {
   cell.clearNote();
 }
 
+function forceResetLanguageDropdown_() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const settings = sheetByKey_(ss, 'Settings');
+  if (!settings) return;
+
+  settings.getRange('L1').setValue('EN');
+  settings.getRange('L2').setValue('JA');
+  settings.hideColumns(12, 1);
+
+  const cell = settings.getRange('J2');
+  const v = String(cell.getDisplayValue() || '').trim().toUpperCase();
+  const finalValue = (v === 'EN' || v === 'JA') ? v : 'EN';
+  cell.clearDataValidations();
+  cell.setDataValidation(
+    SpreadsheetApp.newDataValidation()
+      .requireValueInRange(settings.getRange('L1:L2'), true)
+      .setAllowInvalid(true)
+      .build()
+  );
+  cell.setValue(finalValue);
+}
+
 function applySheetHeadersLanguage_() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const ja = getUiLanguage_() === 'JA';
@@ -1656,6 +1695,7 @@ function applySheetHeadersLanguage_() {
   if (data) {
     data.getRange('A1:C1').setValues([[ja ? 'プロフィール' : 'Open Profile', ja ? '顧客' : 'Customer', ja ? '課題' : 'Route']]);
     data.getRange('D1').clearContent().clearDataValidations();
+    data.getRange('D4').setValue(ja ? '完登率' : 'Comp %');
   }
 
   const customers = sheetByKey_(ss, 'Customers');
@@ -1674,6 +1714,7 @@ function applySheetHeadersLanguage_() {
       ja ? '和グレード' : 'Japanese Level',
       ja ? 'Vグレード' : 'V Scale Level'
     ]]);
+    if (customers.getLastRow() >= 2) customers.getRange(2,3,customers.getLastRow()-1,1).setNumberFormat('0%');
   }
 
   const routes = sheetByKey_(ss, 'Routes');

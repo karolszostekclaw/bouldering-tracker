@@ -95,7 +95,7 @@ function refreshRankingsView_() {
   ]);
 
   target.getRange(4, 1, out.length, out[0].length).setValues(out);
-  target.getRange(4, 5, out.length, 1).setNumberFormat('0.00%');
+  target.getRange(4, 5, out.length, 1).setNumberFormat('0%');
   target.setColumnWidth(1, 70);
   target.setColumnWidth(2, 110);
   target.setColumnWidth(3, 140);

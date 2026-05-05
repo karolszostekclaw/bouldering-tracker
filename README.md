@@ -1,5 +1,7 @@
 # Bouldering Tracker
 
+Japanese quick guide: `README_ja.md`
+
 This directory contains all project-specific code and docs for the Google Sheets bouldering tracker.
 
 ## Files
