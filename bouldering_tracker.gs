@@ -108,6 +108,7 @@ function applyUiLanguage() {
 function runPostUpdateRoutine() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   ensureRequiredSheets_(ss);
+  ensureUiLanguageSetting_(ss.getSheetByName('Settings'));
   ensureTrainingMetricConfig_(ss.getSheetByName('Settings'));
   ensureGradeConversionSheet_(ss);
   installTriggers();
