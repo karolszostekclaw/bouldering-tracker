@@ -1586,7 +1586,7 @@ function ensureUiLanguageSetting_(settingsSheet) {
   settingsSheet.getRange('J2').setDataValidation(
     SpreadsheetApp.newDataValidation()
       .requireValueInList(['EN', 'JA'], true)
-      .setAllowInvalid(false)
+      .setAllowInvalid(true)
       .build()
   );
   normalizeUiLanguageCell_();
