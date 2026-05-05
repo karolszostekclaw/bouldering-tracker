@@ -6,6 +6,14 @@ const GRADE_CONVERSION_SHEET = 'GradeConversion';
 const SHEET_KEY_PREFIX = '[BT:';
 const SHEET_KEY_SUFFIX = ']';
 const LOCALIZABLE_SHEETS = {
+  'Data': { EN: 'Data', JA: 'データ' },
+  'Customers': { EN: 'Customers', JA: '顧客' },
+  'Routes': { EN: 'Routes', JA: '課題' },
+  'Settings': { EN: 'Settings', JA: '設定' },
+  'Logbook': { EN: 'Logbook', JA: '登攀ログ' },
+  'TrainingLog': { EN: 'TrainingLog', JA: 'トレーニングログ' },
+  'EventLog': { EN: 'EventLog', JA: 'イベントログ' },
+  'GradeConversion': { EN: 'GradeConversion', JA: 'グレード変換' },
   'Customer Profile': { EN: 'Customer Profile', JA: '顧客プロフィール' },
   'Route Profile': { EN: 'Route Profile', JA: '課題プロフィール' },
   'Rankings View': { EN: 'Rankings View', JA: 'ランキング表示' },
@@ -169,6 +177,9 @@ function syncTracker() {
     if (!sheet || !custSheet || !routeSheet || !settingsSheet || !logSheet) return;
 
     const settingsLastRow = Math.max(settingsSheet.getLastRow(), 2);
+    const dataRef = sn_(ss, 'Data');
+    const settingsRef = sn_(ss, 'Settings');
+    const routesRef = sn_(ss, 'Routes');
 
     // --- 1. GENERATE MISSING IDs IN DATABASES ---
     generateMissingIds_(custSheet, 'C-');
@@ -185,9 +196,9 @@ function syncTracker() {
       const formulasG = [];
 
       for (let row = 2; row <= custLastRow; row++) {
-        formulasC.push([`=IF(A${row}="", "", IFERROR(LET(comp, FILTER(Settings!$A$2:$A$${settingsLastRow}, Settings!$D$2:$D$${settingsLastRow}=1), scores, FILTER(Data!$D$4:$ZZ, Data!$B$4:$B=A${row}), tops, SUM(MAP(scores, LAMBDA(s, --ISNUMBER(MATCH(s, comp, 0))))), tops / COUNTA(Data!$D$2:$2)), 0))`]);
-        formulasD.push([`=IF(A${row}="", "", SUM(ARRAYFORMULA(IFERROR(XLOOKUP(FILTER(Data!$D$4:$ZZ, Data!$B$4:$B=A${row}), Settings!$A$2:$A$${settingsLastRow}, Settings!$C$2:$C$${settingsLastRow}), 0))))`]);
-        formulasE.push([`=IF(A${row}="", "", IFERROR(LET(comp, FILTER(Settings!$A$2:$A$${settingsLastRow}, Settings!$D$2:$D$${settingsLastRow}=1), scores, FILTER(Data!$D$4:$ZZ, Data!$B$4:$B=A${row}), valid, MAP(scores, LAMBDA(s, ISNUMBER(MATCH(s, comp, 0)))), sent_ids, FILTER(Data!$D$2:$ZZ$2, valid), grades, MAP(TRANSPOSE(sent_ids), LAMBDA(id, XLOOKUP(id, Routes!$A$2:$A, Routes!$C$2:$C, 0))), AVERAGE(ARRAY_CONSTRAIN(SORT(grades, 1, FALSE), 5, 1))), "No Sends"))`]);
+        formulasC.push([`=IF(A${row}="", "", IFERROR(LET(comp, FILTER(${settingsRef}!$A$2:$A$${settingsLastRow}, ${settingsRef}!$D$2:$D$${settingsLastRow}=1), scores, FILTER(${dataRef}!$D$4:$ZZ, ${dataRef}!$B$4:$B=A${row}), tops, SUM(MAP(scores, LAMBDA(s, --ISNUMBER(MATCH(s, comp, 0))))), tops / COUNTA(${dataRef}!$D$2:$2)), 0))`]);
+        formulasD.push([`=IF(A${row}="", "", SUM(ARRAYFORMULA(IFERROR(XLOOKUP(FILTER(${dataRef}!$D$4:$ZZ, ${dataRef}!$B$4:$B=A${row}), ${settingsRef}!$A$2:$A$${settingsLastRow}, ${settingsRef}!$C$2:$C$${settingsLastRow}), 0))))`]);
+        formulasE.push([`=IF(A${row}="", "", IFERROR(LET(comp, FILTER(${settingsRef}!$A$2:$A$${settingsLastRow}, ${settingsRef}!$D$2:$D$${settingsLastRow}=1), scores, FILTER(${dataRef}!$D$4:$ZZ, ${dataRef}!$B$4:$B=A${row}), valid, MAP(scores, LAMBDA(s, ISNUMBER(MATCH(s, comp, 0)))), sent_ids, FILTER(${dataRef}!$D$2:$ZZ$2, valid), grades, MAP(TRANSPOSE(sent_ids), LAMBDA(id, XLOOKUP(id, ${routesRef}!$A$2:$A, ${routesRef}!$C$2:$C, 0))), AVERAGE(ARRAY_CONSTRAIN(SORT(grades, 1, FALSE), 5, 1))), "No Sends"))`]);
         formulasG.push([`=IF(F${row}="", "", IFERROR(DATEDIF(F${row}, TODAY(), "Y"), "Invalid Date"))`]);
       }
 
@@ -1246,7 +1257,8 @@ function refreshProfileTabs_() {
     routeProfile.getRange('C13:H28').breakApart();
   } catch (e) {}
   routeProfile.getRange('C13:H28').merge();
-  routeProfile.getRange('C13').setFormula('=IF(A1="", "", LET(raw_url, XLOOKUP(A1, Routes!A:A, Routes!D:D), IFERROR(IMAGE("https://drive.google.com/uc?id=" & REGEXEXTRACT(raw_url, "/d/([a-zA-Z0-9_-]+)")), IMAGE(raw_url))))');
+  const routesRef = sn_(ss, 'Routes');
+  routeProfile.getRange('C13').setFormula(`=IF(A1="", "", LET(raw_url, XLOOKUP(A1, ${routesRef}!A:A, ${routesRef}!D:D), IFERROR(IMAGE("https://drive.google.com/uc?id=" & REGEXEXTRACT(raw_url, "/d/([a-zA-Z0-9_-]+)")), IMAGE(raw_url))))`);
 }
 
 function ensureTrainingMetricConfig_(settingsSheet) {
@@ -1508,7 +1520,7 @@ function generateIdForSheet_(sheetName, prefix) {
 }
 
 function ensureGradeConversionSheet_(ss) {
-  let sheet = ss.getSheetByName(GRADE_CONVERSION_SHEET);
+  let sheet = sheetByKey_(ss, GRADE_CONVERSION_SHEET);
   if (!sheet) sheet = ss.insertSheet(GRADE_CONVERSION_SHEET);
 
   const headers = ['Difficulty Number', 'Japanese Grade', 'V Scale Grade'];
@@ -1534,10 +1546,10 @@ function refreshRouteGradeFormulas_(routeSheet) {
   const v = [];
   for (let row = 2; row <= lastRow; row++) {
     jp.push([
-      `=IF($C${row}="", "", IFERROR(XLOOKUP(FLOOR($C${row}), GradeConversion!$A:$A, GradeConversion!$B:$B, "", -1) & IF(MOD($C${row},1)=0, "", IF(MOD($C${row},1)<0.33, "-", IF(MOD($C${row},1)<0.67, "", "+"))), ""))`
+      `=IF($C${row}="", "", IFERROR(XLOOKUP(FLOOR($C${row}), ${sn_(SpreadsheetApp.getActiveSpreadsheet(), GRADE_CONVERSION_SHEET)}!$A:$A, ${sn_(SpreadsheetApp.getActiveSpreadsheet(), GRADE_CONVERSION_SHEET)}!$B:$B, "", -1) & IF(MOD($C${row},1)=0, "", IF(MOD($C${row},1)<0.33, "-", IF(MOD($C${row},1)<0.67, "", "+"))), ""))`
     ]);
     v.push([
-      `=IF($C${row}="", "", IFERROR(XLOOKUP(FLOOR($C${row}), GradeConversion!$A:$A, GradeConversion!$C:$C, "", -1), ""))`
+      `=IF($C${row}="", "", IFERROR(XLOOKUP(FLOOR($C${row}), ${sn_(SpreadsheetApp.getActiveSpreadsheet(), GRADE_CONVERSION_SHEET)}!$A:$A, ${sn_(SpreadsheetApp.getActiveSpreadsheet(), GRADE_CONVERSION_SHEET)}!$C:$C, "", -1), ""))`
     ]);
   }
   routeSheet.getRange(2, 6, numRows, 1).setFormulas(jp);
@@ -1554,10 +1566,10 @@ function refreshCustomerGradeDisplayFormulas_(custSheet) {
   const v = [];
   for (let row = 2; row <= lastRow; row++) {
     jp.push([
-      `=IF($E${row}="", "", IFERROR(XLOOKUP(FLOOR($E${row}), GradeConversion!$A:$A, GradeConversion!$B:$B, "", -1) & IF(MOD($E${row},1)=0, "", IF(MOD($E${row},1)<0.33, "-", IF(MOD($E${row},1)<0.67, "", "+"))), ""))`
+      `=IF($E${row}="", "", IFERROR(XLOOKUP(FLOOR($E${row}), ${sn_(SpreadsheetApp.getActiveSpreadsheet(), GRADE_CONVERSION_SHEET)}!$A:$A, ${sn_(SpreadsheetApp.getActiveSpreadsheet(), GRADE_CONVERSION_SHEET)}!$B:$B, "", -1) & IF(MOD($E${row},1)=0, "", IF(MOD($E${row},1)<0.33, "-", IF(MOD($E${row},1)<0.67, "", "+"))), ""))`
     ]);
     v.push([
-      `=IF($E${row}="", "", IFERROR(XLOOKUP(FLOOR($E${row}), GradeConversion!$A:$A, GradeConversion!$C:$C, "", -1), ""))`
+      `=IF($E${row}="", "", IFERROR(XLOOKUP(FLOOR($E${row}), ${sn_(SpreadsheetApp.getActiveSpreadsheet(), GRADE_CONVERSION_SHEET)}!$A:$A, ${sn_(SpreadsheetApp.getActiveSpreadsheet(), GRADE_CONVERSION_SHEET)}!$C:$C, "", -1), ""))`
     ]);
   }
   custSheet.getRange(2, 11, numRows, 1).setFormulas(jp);
@@ -1607,6 +1619,12 @@ function getUiLanguage_() {
 function t_(key) {
   const lang = getUiLanguage_();
   return (I18N[lang] && I18N[lang][key]) || I18N.EN[key] || key;
+}
+
+function sn_(ss, key) {
+  const sheet = sheetByKey_(ss, key);
+  const name = sheet ? sheet.getName() : key;
+  return `'${String(name).replace(/'/g, "''")}'`;
 }
 
 function normalizeUiLanguageCell_() {
