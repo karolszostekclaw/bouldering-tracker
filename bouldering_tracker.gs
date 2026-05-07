@@ -858,7 +858,7 @@ function colorCodeCustomersHeader_(sheet) {
   const OPTIONAL = '#fff2cc';
   const CALCULATED = '#cfe2f3';
   sheet.getRange('A1:U1').setBackgrounds([[
-    REQUIRED,
+    CALCULATED,
     REQUIRED,
     CALCULATED,
     CALCULATED,
@@ -888,7 +888,7 @@ function colorCodeRoutesHeader_(sheet) {
   const OPTIONAL = '#fff2cc';
   const CALCULATED = '#cfe2f3';
   sheet.getRange('A1:G1').setBackgrounds([[
-    REQUIRED,
+    CALCULATED,
     REQUIRED,
     REQUIRED,
     OPTIONAL,
