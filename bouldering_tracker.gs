@@ -1159,8 +1159,37 @@ function prepareEventEntryTab() {
   sheet.getRange(21, 1, 39, 1).insertCheckboxes();
   const dv = SpreadsheetApp.newDataValidation().requireValueInList(EVENT_ENTRY_TYPES).build();
   sheet.getRange(21, 2, 39, 1).setDataValidation(dv);
+  applyEventEntrySingleEntryColors_(sheet);
   sheet.autoResizeColumns(1, 11);
   SpreadsheetApp.getActive().toast('Event Entry tab prepared.', 'Tracker Tools');
+}
+
+function applyEventEntrySingleEntryColors_(sheet) {
+  if (!sheet) return;
+
+  const REQUIRED = '#f4cccc';
+  const OPTIONAL = '#fff2cc';
+  const CALCULATED = '#cfe2f3';
+
+  // Customer Event (A:B)
+  sheet.getRangeList(['A2:B2','A4:B4']).setBackground(REQUIRED);
+  sheet.getRangeList(['A3:B3','A5:B8']).setBackground(OPTIONAL);
+  sheet.getRange('A9:B9').setBackground(CALCULATED);
+
+  // Route Event (D:E)
+  sheet.getRangeList(['D3:E3','D4:E4']).setBackground(REQUIRED);
+  sheet.getRangeList(['D2:E2','D5:E6']).setBackground(OPTIONAL);
+  sheet.getRange('D7:E7').setBackground(CALCULATED);
+
+  // Climb Event (G:H)
+  sheet.getRangeList(['G3:H3','G4:H4','G5:H5']).setBackground(REQUIRED);
+  sheet.getRangeList(['G2:H2','G6:H10']).setBackground(OPTIONAL);
+  sheet.getRange('G11:H11').setBackground(CALCULATED);
+
+  // Training Event (J:K)
+  sheet.getRangeList(['J3:K3','J5:K5','J6:K6']).setBackground(REQUIRED);
+  sheet.getRangeList(['J2:K2','J4:K4','J7:K8']).setBackground(OPTIONAL);
+  sheet.getRange('J9:K9').setBackground(CALCULATED);
 }
 
 function applyEventEntryRows() {
