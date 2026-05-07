@@ -12,6 +12,8 @@
 - `ARCHITECTURE.md` — アーキテクチャ
 - `SECURITY.md` — セキュリティ方針
 - `TESTING.md` — 事前テスト手順
+- `SUPPORT.md` — サポート / 不具合報告（英語）
+- `SUPPORT_ja.md` — サポート / 不具合報告（日本語）
 - `CHANGELOG.md` — 変更履歴
 
 ## クローンと初期セットアップ
@@ -118,7 +120,8 @@ CSV を `EventLog`（2行目以降）に取り込んだ後:
 ```
 
 ## サポート / 不具合報告
-- `SUPPORT.md` を参照
+- 日本語: `SUPPORT_ja.md`
+- 英語: `SUPPORT.md`
   - バグ報告テンプレート
   - スクリーンショット証跡チェックリスト
   - よくある問題の対処
