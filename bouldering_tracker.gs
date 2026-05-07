@@ -1,6 +1,8 @@
 const TRAINING_METRICS = ['VR', 'CP', 'LH', 'RH', 'HS'];
 const REQUIRED_SHEETS = ['Data', 'Customers', 'Routes', 'Settings', 'Logbook', 'Customer Profile', 'Route Profile'];
 const EVENT_LOG_SCHEMA_VERSION = 1;
+const TRACKER_PATCH_VERSION = '2026-05-07.5';
+const SUPPORT_URL = 'https://github.com/openclaw/bouldering-tracker/blob/main/SUPPORT.md';
 const EVENT_ENTRY_TYPES = ['CUSTOMER_CREATED', 'CUSTOMER_UPDATED', 'ROUTE_CREATED', 'CLIMB_LOGGED', 'TRAINING_LOGGED'];
 const GRADE_CONVERSION_SHEET = 'GradeConversion';
 const SHEET_KEY_PREFIX = '[BT:';
@@ -138,7 +140,7 @@ function runPostUpdateRoutine() {
   syncTracker();
   refreshPublicViews();
   refreshProfileTabs_();
-  SpreadsheetApp.getActive().toast('Post-update routine completed.', 'Tracker Tools');
+  SpreadsheetApp.getActive().toast(`Post-update routine completed. Patch ${TRACKER_PATCH_VERSION}`, 'Tracker Tools');
 }
 
 function installTriggers() {
@@ -1717,6 +1719,10 @@ function ensureUiLanguageSetting_(settingsSheet) {
       .setAllowInvalid(true)
       .build()
   );
+  settingsSheet.getRange('N1').setValue('Patch Version');
+  settingsSheet.getRange('N2').setValue(TRACKER_PATCH_VERSION);
+  settingsSheet.getRange('N4').setValue('Troubleshooting');
+  settingsSheet.getRange('N5').setFormula(`=HYPERLINK("${SUPPORT_URL}", "Open SUPPORT.md")`);
   normalizeUiLanguageCell_();
 }
 
@@ -1851,6 +1857,10 @@ function applySheetHeadersLanguage_() {
     ]]);
     settings.getRange('F1:H1').setValues([[ja ? '指標' : 'Metric', ja ? 'デフォルト単位' : 'Default Unit', ja ? '大きいほど良い' : 'Higher Is Better']]);
     settings.getRange('J1').setValue(ja ? 'UI言語' : 'UI Language');
+    settings.getRange('N1').setValue(ja ? 'パッチバージョン' : 'Patch Version');
+    settings.getRange('N2').setValue(TRACKER_PATCH_VERSION);
+    settings.getRange('N4').setValue(ja ? 'トラブルシューティング' : 'Troubleshooting');
+    settings.getRange('N5').setFormula(`=HYPERLINK("${SUPPORT_URL}", "Open SUPPORT.md")`);
   }
 
   const logbook = sheetByKey_(ss, 'Logbook');
