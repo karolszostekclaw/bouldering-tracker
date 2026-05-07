@@ -55,7 +55,32 @@ Return:
   - Event Entry single-entry colors and validations are intact
   - Rankings and profile tabs still refresh
 
-## 6) If something breaks
+## 6) Common migration scenario: importing existing users in bulk
+
+If the gym already has a small member table and wants to import users quickly:
+
+Recommended path:
+1. Keep a backup copy of the sheet first.
+2. Ask Gemini to generate a one-time Apps Script import helper.
+3. Import into `Customers` while preserving existing computed columns/formulas.
+4. Run:
+   - `Tracker Tools -> Sync IDs & Dashboards`
+   - `Tracker Tools -> Run Post-Update Routine`
+
+Prompt template for this case:
+
+"Create a one-time Google Apps Script function to bulk import users from sheet `RawUsers` into `Customers`.
+Constraints:
+- Do not overwrite formula columns (C, D, E, G, K, L).
+- If ID is missing, leave it blank so tracker auto-ID logic can fill it.
+- Map fields safely by header names, not hard-coded indexes.
+- Skip fully empty rows.
+- Log how many rows were inserted/updated/skipped.
+- Return rollback steps."
+
+Tip: if source headers are messy, ask Gemini to output a header mapping table first and wait for confirmation before writing data.
+
+## 7) If something breaks
 
 1. Use Undo immediately if possible.
 2. Re-run:
