@@ -9,6 +9,7 @@
 - `.claspignore` — push 対象を `Code.gs`, `Views.gs`, `appsscript.json` に限定
 - `bouldering_tracker_user_guide.md` — ユーザーガイド（英語）
 - `bouldering_tracker_user_guide_ja.md` — ユーザーガイド（日本語）
+- `GEMINI_SPREADSHEET_ASSISTANT_GUIDE.md` — Google 組み込み AI 補助向けガイド
 - `ARCHITECTURE.md` — アーキテクチャ
 - `SECURITY.md` — セキュリティ方針
 - `TESTING.md` — 事前テスト手順

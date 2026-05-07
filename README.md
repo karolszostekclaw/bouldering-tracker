@@ -11,6 +11,7 @@ This directory contains all project-specific code and docs for the Google Sheets
 - `.claspignore` — push only `Code.gs`, `Views.gs`, `appsscript.json`
 - `bouldering_tracker_user_guide.md` — manual (EN)
 - `bouldering_tracker_user_guide_ja.md` — manual (JA)
+- `GEMINI_SPREADSHEET_ASSISTANT_GUIDE.md` — prompting/safety guide for Google built-in AI tools
 - `ARCHITECTURE.md` — project architecture
 - `SECURITY.md` — security model
 - `TESTING.md` — pre-push test checklist
