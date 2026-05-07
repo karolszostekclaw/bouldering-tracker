@@ -1,9 +1,13 @@
 const TRAINING_METRICS = ['VR', 'CP', 'LH', 'RH', 'HS'];
 const REQUIRED_SHEETS = ['Data', 'Customers', 'Routes', 'Settings', 'Logbook', 'Customer Profile', 'Route Profile'];
 const EVENT_LOG_SCHEMA_VERSION = 1;
-const TRACKER_PATCH_VERSION = '2026-05-07.5';
-const SUPPORT_URL = 'https://github.com/karolszostekclaw/bouldering-tracker/blob/main/SUPPORT.md';
-const GUIDE_URL = 'https://github.com/karolszostekclaw/bouldering-tracker/blob/main/bouldering_tracker_user_guide.md';
+const TRACKER_PATCH_VERSION = '2026-05-07.6';
+const SUPPORT_URL_EN = 'https://github.com/karolszostekclaw/bouldering-tracker/blob/main/SUPPORT.md';
+const SUPPORT_URL_JA = 'https://github.com/karolszostekclaw/bouldering-tracker/blob/main/SUPPORT_ja.md';
+const GUIDE_URL_EN = 'https://github.com/karolszostekclaw/bouldering-tracker/blob/main/bouldering_tracker_user_guide.md';
+const GUIDE_URL_JA = 'https://github.com/karolszostekclaw/bouldering-tracker/blob/main/bouldering_tracker_user_guide_ja.md';
+const README_URL_EN = 'https://github.com/karolszostekclaw/bouldering-tracker/blob/main/README.md';
+const README_URL_JA = 'https://github.com/karolszostekclaw/bouldering-tracker/blob/main/README_ja.md';
 const EVENT_ENTRY_TYPES = ['CUSTOMER_CREATED', 'CUSTOMER_UPDATED', 'ROUTE_CREATED', 'CLIMB_LOGGED', 'TRAINING_LOGGED'];
 const GRADE_CONVERSION_SHEET = 'GradeConversion';
 const SHEET_KEY_PREFIX = '[BT:';
@@ -98,6 +102,7 @@ function setupSpreadsheet() {
   ensureSheetWithHeaders_(ss, 'Customer Profile', ['Customer ID']);
   ensureSheetWithHeaders_(ss, 'Route Profile', ['Route ID']);
 
+  cleanupDefaultSheet_(ss);
   seedDefaultSettings_();
   ensureUiLanguageSetting_(sheetByKey_(ss, 'Settings'));
   ensureTrainingMetricConfig_(sheetByKey_(ss, 'Settings'));
@@ -930,6 +935,20 @@ function ensureSheetWithHeaders_(ss, name, headers) {
   }
 }
 
+function cleanupDefaultSheet_(ss) {
+  if (!ss) return;
+  const defaultNames = ['Sheet1', 'シート1'];
+  defaultNames.forEach(name => {
+    const sh = ss.getSheetByName(name);
+    if (!sh) return;
+    if (ss.getSheets().length <= 1) return;
+    const rows = sh.getLastRow();
+    const cols = sh.getLastColumn();
+    const hasData = rows > 1 || cols > 1 || String(sh.getRange('A1').getDisplayValue() || '').trim() !== '';
+    if (!hasData) ss.deleteSheet(sh);
+  });
+}
+
 function seedDefaultSettings_() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const settings = sheetByKey_(ss, 'Settings');
@@ -1720,12 +1739,15 @@ function ensureUiLanguageSetting_(settingsSheet) {
       .setAllowInvalid(true)
       .build()
   );
-  settingsSheet.getRange('N1').setValue('Patch Version');
+  const ja = String(settingsSheet.getRange('J2').getDisplayValue() || '').trim().toUpperCase() === 'JA';
+  settingsSheet.getRange('N1').setValue(ja ? 'パッチバージョン' : 'Patch Version');
   settingsSheet.getRange('N2').setValue(TRACKER_PATCH_VERSION);
-  settingsSheet.getRange('N4').setValue('Troubleshooting');
-  settingsSheet.getRange('N5').setFormula(`=HYPERLINK("${SUPPORT_URL}", "Open SUPPORT.md")`);
-  settingsSheet.getRange('N7').setValue('Documentation');
-  settingsSheet.getRange('N8').setFormula(`=HYPERLINK("${GUIDE_URL}", "Open User Guide")`);
+  settingsSheet.getRange('N4').setValue(ja ? 'トラブルシューティング' : 'Troubleshooting');
+  settingsSheet.getRange('N5').setFormula(`=HYPERLINK("${ja ? SUPPORT_URL_JA : SUPPORT_URL_EN}", "${ja ? 'SUPPORT_ja.md を開く' : 'Open SUPPORT.md'}")`);
+  settingsSheet.getRange('N7').setValue(ja ? 'ドキュメント' : 'Documentation');
+  settingsSheet.getRange('N8').setFormula(`=HYPERLINK("${ja ? GUIDE_URL_JA : GUIDE_URL_EN}", "${ja ? 'ユーザーガイドを開く' : 'Open User Guide'}")`);
+  settingsSheet.getRange('N10').setValue(ja ? 'リポジトリ情報' : 'Repository Info');
+  settingsSheet.getRange('N11').setFormula(`=HYPERLINK("${ja ? README_URL_JA : README_URL_EN}", "${ja ? 'README を開く' : 'Open README'}")`);
   normalizeUiLanguageCell_();
 }
 
@@ -1863,9 +1885,11 @@ function applySheetHeadersLanguage_() {
     settings.getRange('N1').setValue(ja ? 'パッチバージョン' : 'Patch Version');
     settings.getRange('N2').setValue(TRACKER_PATCH_VERSION);
     settings.getRange('N4').setValue(ja ? 'トラブルシューティング' : 'Troubleshooting');
-    settings.getRange('N5').setFormula(`=HYPERLINK("${SUPPORT_URL}", "Open SUPPORT.md")`);
+    settings.getRange('N5').setFormula(`=HYPERLINK("${ja ? SUPPORT_URL_JA : SUPPORT_URL_EN}", "${ja ? 'SUPPORT_ja.md を開く' : 'Open SUPPORT.md'}")`);
     settings.getRange('N7').setValue(ja ? 'ドキュメント' : 'Documentation');
-    settings.getRange('N8').setFormula(`=HYPERLINK("${GUIDE_URL}", "Open User Guide")`);
+    settings.getRange('N8').setFormula(`=HYPERLINK("${ja ? GUIDE_URL_JA : GUIDE_URL_EN}", "${ja ? 'ユーザーガイドを開く' : 'Open User Guide'}")`);
+    settings.getRange('N10').setValue(ja ? 'リポジトリ情報' : 'Repository Info');
+    settings.getRange('N11').setFormula(`=HYPERLINK("${ja ? README_URL_JA : README_URL_EN}", "${ja ? 'README を開く' : 'Open README'}")`);
   }
 
   const logbook = sheetByKey_(ss, 'Logbook');
