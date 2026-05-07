@@ -3,6 +3,7 @@ const REQUIRED_SHEETS = ['Data', 'Customers', 'Routes', 'Settings', 'Logbook', '
 const EVENT_LOG_SCHEMA_VERSION = 1;
 const TRACKER_PATCH_VERSION = '2026-05-07.5';
 const SUPPORT_URL = 'https://github.com/karolszostekclaw/bouldering-tracker/blob/main/SUPPORT.md';
+const GUIDE_URL = 'https://github.com/karolszostekclaw/bouldering-tracker/blob/main/bouldering_tracker_user_guide.md';
 const EVENT_ENTRY_TYPES = ['CUSTOMER_CREATED', 'CUSTOMER_UPDATED', 'ROUTE_CREATED', 'CLIMB_LOGGED', 'TRAINING_LOGGED'];
 const GRADE_CONVERSION_SHEET = 'GradeConversion';
 const SHEET_KEY_PREFIX = '[BT:';
@@ -1723,6 +1724,8 @@ function ensureUiLanguageSetting_(settingsSheet) {
   settingsSheet.getRange('N2').setValue(TRACKER_PATCH_VERSION);
   settingsSheet.getRange('N4').setValue('Troubleshooting');
   settingsSheet.getRange('N5').setFormula(`=HYPERLINK("${SUPPORT_URL}", "Open SUPPORT.md")`);
+  settingsSheet.getRange('N7').setValue('Documentation');
+  settingsSheet.getRange('N8').setFormula(`=HYPERLINK("${GUIDE_URL}", "Open User Guide")`);
   normalizeUiLanguageCell_();
 }
 
@@ -1861,6 +1864,8 @@ function applySheetHeadersLanguage_() {
     settings.getRange('N2').setValue(TRACKER_PATCH_VERSION);
     settings.getRange('N4').setValue(ja ? 'トラブルシューティング' : 'Troubleshooting');
     settings.getRange('N5').setFormula(`=HYPERLINK("${SUPPORT_URL}", "Open SUPPORT.md")`);
+    settings.getRange('N7').setValue(ja ? 'ドキュメント' : 'Documentation');
+    settings.getRange('N8').setFormula(`=HYPERLINK("${GUIDE_URL}", "Open User Guide")`);
   }
 
   const logbook = sheetByKey_(ss, 'Logbook');
