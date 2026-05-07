@@ -133,6 +133,7 @@ function runPostUpdateRoutine() {
   forceResetLanguageDropdown_();
   ensureTrainingMetricConfig_(sheetByKey_(ss, 'Settings'));
   ensureGradeConversionSheet_(ss);
+  applySheetHeadersLanguage_();
   installTriggers();
   syncTracker();
   refreshPublicViews();
@@ -169,6 +170,7 @@ function syncTracker() {
   try {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     ensureRequiredSheets_(ss);
+    applySheetHeadersLanguage_();
     const sheet = sheetByKey_(ss, 'Data');
     const custSheet = sheetByKey_(ss, 'Customers');
     const routeSheet = sheetByKey_(ss, 'Routes');
