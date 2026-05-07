@@ -84,8 +84,8 @@ function onOpen() {
 function setupSpreadsheet() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
 
-  ensureSheetWithHeaders_(ss, 'Data', ['Open Profile', 'Customer', 'Route', 'Status']);
-  ensureSheetWithHeaders_(ss, 'Customers', ['ID', 'Name', 'Completion Rate', 'Points', 'V Scale Level', 'Birthday', 'Age', 'Height', 'Experience', 'Gender', 'Japanese Level', 'V Scale Level']);
+  ensureSheetWithHeaders_(ss, 'Data', ['Open Profile', 'Customer', 'Route']);
+  ensureSheetWithHeaders_(ss, 'Customers', ['ID', 'Name', 'Completion Rate', 'Points', 'V Scale Level', 'Birthday', 'Age', 'Height', 'Experience', 'Gender', 'Japanese Level', 'V Scale Level', 'Full Name', 'School Grade', 'Guardian Name', 'Contact', 'Registration Date', 'Visit Count', 'Last Visit Date', 'Primary Category', 'Detailed Tier']);
   ensureSheetWithHeaders_(ss, 'Routes', ['ID', 'Name', 'V Scale Difficulty', 'Link', 'Created At', 'Japanese Grade', 'V Scale Grade']);
   ensureSheetWithHeaders_(ss, 'Settings', ['Status', 'Label', 'Score', 'Complete?']);
   ensureSheetWithHeaders_(ss, 'Logbook', ['Timestamp', 'Customer ID', 'Route ID', 'Status', 'Grade', 'Height', 'Age', 'Experience', 'Gender']);
@@ -244,7 +244,9 @@ function syncTracker() {
       sheet.getRange(3, 5, 1, finalRoutes.length).setValues([finalRoutes.map(r => r[1])]);
     }
 
-    sheet.getRange('D4').setValue(getUiLanguage_()==='JA' ? '完登率' : 'Comp %');
+    const ja = getUiLanguage_() === 'JA';
+    sheet.getRange('D4').setValue(ja ? '完登率' : 'Comp %');
+    ensureDataQuickAction_(sheet, ja);
     sheet.setFrozenRows(4);
     sheet.setFrozenColumns(4);
 
@@ -380,6 +382,12 @@ function handleEdit(e) {
   const col = e.range.getColumn();
   const a1 = e.range.getA1Notation();
   const ss = e.source;
+
+  if (e.value === 'TRUE' && a1 === 'D3') {
+    e.range.setValue(false);
+    logFromDataSheet();
+    return;
+  }
 
   if (a1 === 'B1' || a1 === 'C1') {
     syncTracker();
@@ -832,6 +840,60 @@ function ensureSheetByKey_(ss, key) {
   const lang = getUiLanguage_();
   const name = LOCALIZABLE_SHEETS[key] ? makeSheetDisplayName_(key, lang) : key;
   return ss.insertSheet(name);
+}
+
+function ensureDataQuickAction_(dataSheet, ja) {
+  if (!dataSheet) return;
+  dataSheet.getRange('D2').setValue(ja ? '登攀を記録' : 'Log Climb');
+  const cell = dataSheet.getRange('D3');
+  cell.insertCheckboxes();
+  if (cell.getValue() !== true && cell.getValue() !== false) cell.setValue(false);
+}
+
+function colorCodeCustomersHeader_(sheet) {
+  if (!sheet) return;
+  const REQUIRED = '#f4cccc';
+  const OPTIONAL = '#fff2cc';
+  const CALCULATED = '#cfe2f3';
+  sheet.getRange('A1:U1').setBackgrounds([[
+    REQUIRED,
+    REQUIRED,
+    CALCULATED,
+    CALCULATED,
+    CALCULATED,
+    OPTIONAL,
+    CALCULATED,
+    OPTIONAL,
+    OPTIONAL,
+    OPTIONAL,
+    CALCULATED,
+    CALCULATED,
+    OPTIONAL,
+    OPTIONAL,
+    OPTIONAL,
+    OPTIONAL,
+    OPTIONAL,
+    CALCULATED,
+    CALCULATED,
+    OPTIONAL,
+    OPTIONAL
+  ]]);
+}
+
+function colorCodeRoutesHeader_(sheet) {
+  if (!sheet) return;
+  const REQUIRED = '#f4cccc';
+  const OPTIONAL = '#fff2cc';
+  const CALCULATED = '#cfe2f3';
+  sheet.getRange('A1:G1').setBackgrounds([[
+    REQUIRED,
+    REQUIRED,
+    REQUIRED,
+    OPTIONAL,
+    OPTIONAL,
+    CALCULATED,
+    CALCULATED
+  ]]);
 }
 
 function ensureLocalizedSheetNames_() {
@@ -1702,11 +1764,12 @@ function applySheetHeadersLanguage_() {
     data.getRange('A1:C1').setValues([[ja ? 'プロフィール' : 'Open Profile', ja ? '顧客' : 'Customer', ja ? '課題' : 'Route']]);
     data.getRange('D1').clearContent().clearDataValidations();
     data.getRange('D4').setValue(ja ? '完登率' : 'Comp %');
+    ensureDataQuickAction_(data, ja);
   }
 
   const customers = sheetByKey_(ss, 'Customers');
   if (customers) {
-    customers.getRange('A1:L1').setValues([[
+    customers.getRange('A1:U1').setValues([[
       'ID',
       ja ? '名前' : 'Name',
       ja ? '完登率' : 'Completion Rate',
@@ -1718,8 +1781,18 @@ function applySheetHeadersLanguage_() {
       ja ? '経験' : 'Experience',
       ja ? '性別' : 'Gender',
       ja ? '和グレード' : 'Japanese Level',
-      ja ? 'Vグレード' : 'V Scale Level'
+      ja ? 'Vグレード' : 'V Scale Level',
+      ja ? '本名' : 'Full Name',
+      ja ? '学年' : 'School Grade',
+      ja ? '保護者名' : 'Guardian Name',
+      ja ? '連絡先' : 'Contact',
+      ja ? '登録日' : 'Registration Date',
+      ja ? '来場回数' : 'Visit Count',
+      ja ? '最終来場日' : 'Last Visit Date',
+      ja ? '主要カテゴリ' : 'Primary Category',
+      ja ? '詳細層' : 'Detailed Tier'
     ]]);
+    colorCodeCustomersHeader_(customers);
     if (customers.getLastRow() >= 2) customers.getRange(2,3,customers.getLastRow()-1,1).setNumberFormat('0%');
   }
 
@@ -1734,6 +1807,7 @@ function applySheetHeadersLanguage_() {
       ja ? '和グレード' : 'Japanese Grade',
       ja ? 'Vグレード' : 'V Scale Grade'
     ]]);
+    colorCodeRoutesHeader_(routes);
   }
 
   const settings = sheetByKey_(ss, 'Settings');
